@@ -1,16 +1,31 @@
+﻿# Project identity
+
+- Survival Diary helps users record spending, manage budgets, discover saving opportunities, explore youth and living-policy information, and share practical money-saving knowledge through community features.
+- Reference screenshots may be used for interaction patterns, motion, spacing, and layout while keeping implementation aligned with Survival Diary's economy, saving, policy, and household-budget purpose.
+
+## Repository and delivery rules
+
+- Repository: `https://github.com/KwanEon/SurvivalDiary_WebFrontend`
+- Scope: web frontend only. Keep Flutter app and Spring Boot API changes in their respective repositories.
+- Jade Cohen / `ligr00vefe@naver.com` work is owned by `kimin`.
+- Create every work branch as `{name}/{type}/{task}`. For this owner, use `kimin/{type}/{task}`; for example, `kimin/docs/repository-rules`.
+- Use Conventional Commit messages such as `docs: document repository delivery rules`.
+- Never commit or push directly to `main`. Push the work branch to this repository and open a pull request targeting `main`.
+- Do not commit generated build output, local editor settings, or secret files.
+
 # AGENTS.md - Survival Diary Web Frontend
 
 AI coding agents should follow this document when working in this repository.
 
 ## Git branch ownership rule
 
-- Jade Cohen / ligr00vefe@naver.com 작업자는 `kimin`으로 식별한다.
-- 모든 작업 브랜치는 반드시 `{name}/{type}/{task}` 형식을 사용한다.
-- kimin 작업 브랜치는 반드시 `kimin/{type}/{task}` 형식을 사용한다.
-- 허용 예시: `kimin/feat/signup-page`, `kimin/fix/auth-route`, `kimin/chore/initial-frontend-snapshot`.
-- `main`에는 절대 직접 커밋하거나 직접 push하지 않는다.
-- 모든 변경 사항은 작업 브랜치에 push한 뒤 PR로만 `main`에 반영한다.
-- 커밋 메시지는 Conventional Commits 형식을 사용한다. 예: `feat: add email signup page`.
+- Jade Cohen / ligr00vefe@naver.com ?묒뾽?먮뒗 `kimin`?쇰줈 ?앸퀎?쒕떎.
+- 紐⑤뱺 ?묒뾽 釉뚮옖移섎뒗 諛섎뱶??`{name}/{type}/{task}` ?뺤떇???ъ슜?쒕떎.
+- kimin ?묒뾽 釉뚮옖移섎뒗 諛섎뱶??`kimin/{type}/{task}` ?뺤떇???ъ슜?쒕떎.
+- ?덉슜 ?덉떆: `kimin/feat/signup-page`, `kimin/fix/auth-route`, `kimin/chore/initial-frontend-snapshot`.
+- `main`?먮뒗 ?덈? 吏곸젒 而ㅻ컠?섍굅??吏곸젒 push?섏? ?딅뒗??
+- 紐⑤뱺 蹂寃??ы빆? ?묒뾽 釉뚮옖移섏뿉 push????PR濡쒕쭔 `main`??諛섏쁺?쒕떎.
+- 而ㅻ컠 硫붿떆吏??Conventional Commits ?뺤떇???ъ슜?쒕떎. ?? `feat: add email signup page`.
 
 ## Project notes
 
