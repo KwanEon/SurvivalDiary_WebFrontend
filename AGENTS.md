@@ -1,5 +1,14 @@
 # AGENTS.md
 
+## Repository and delivery rules
+
+- Repository: `https://github.com/KwanEon/SurvivalDiary_WebFrontend`
+- Scope: web frontend only. Keep Flutter app and Spring Boot API changes in their respective repositories.
+- Create every work branch as `{name}/{type}/{task}` using the actual owner name; for example, `alex/docs/repository-rules`.
+- Use Conventional Commit messages such as `docs: document repository delivery rules`.
+- Never commit or push directly to `main`. Push the work branch to this repository and open a pull request targeting `main`.
+- Do not commit generated build output, local editor settings, or secret files.
+
 이 문서는 Codex, Claude Code를 포함한 AI 에이전트와 팀원이 공통으로 따라야 할 작업 규칙입니다.
 
 ## 프로젝트 목표
