@@ -29,6 +29,19 @@ VITE_API_BASE_URL=http://localhost:8080/api
 VITE_APP_ENV=local
 ```
 
+SNS 로그인을 사용할 때 `.env.local`에 공개 클라이언트 값을 추가합니다. Client Secret은 웹에 넣지 않습니다.
+
+```env
+VITE_API_BASE_URL=http://localhost:8080
+VITE_KAKAO_REST_API_KEY=카카오_REST_API_KEY
+VITE_NAVER_CLIENT_ID=네이버_CLIENT_ID
+```
+
+OAuth 콘솔 콜백 주소:
+
+- 카카오: `http://localhost:5173/auth/callback/kakao`
+- 네이버: `http://localhost:5173/auth/callback/naver`
+
 ## 화면 경로
 
 | 화면           | URL                    | 담당 기능 폴더                    |
