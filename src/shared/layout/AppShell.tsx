@@ -5,20 +5,21 @@ import {
   ChevronDown,
   CircleHelp,
   Home,
+  LogOut,
   MapPinned,
   Menu,
   MessageCircleMore,
   PlusCircle,
   Search,
-  Settings,
   Sparkles,
   UserRound,
   X,
 } from 'lucide-react';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import './app-shell.css';
 import { useAuth } from '../../features/auth/AuthContext';
+import ProfileAvatar from '../components/ProfileAvatar';
 
 const primaryNavigation = [
   { label: '홈', to: '/', icon: Home, end: true },
@@ -29,21 +30,48 @@ const primaryNavigation = [
   { label: '커뮤니티', to: '/community', icon: MessageCircleMore },
 ];
 
-const futureNavigation = [
-  { label: '마이페이지', icon: UserRound },
-  { label: '설정', icon: Settings },
-];
-
 interface AppShellProps {
   children: ReactNode;
 }
 
 function AppShell({ children }: AppShellProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
   const [location] = useLocation();
   const { user, logout } = useAuth();
 
   const closeMenu = () => setIsMenuOpen(false);
+
+  useEffect(() => {
+    setIsAccountMenuOpen(false);
+  }, [location]);
+
+  useEffect(() => {
+    if (!isAccountMenuOpen) return;
+
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!accountMenuRef.current?.contains(event.target as Node)) {
+        setIsAccountMenuOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsAccountMenuOpen(false);
+    };
+
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isAccountMenuOpen]);
+
+  const confirmLogout = async () => {
+    setIsAccountMenuOpen(false);
+    if (!window.confirm('현재 계정에서 로그아웃할까요?')) return;
+    await logout();
+  };
 
   return (
     <div className="app-shell">
@@ -80,15 +108,6 @@ function AppShell({ children }: AppShellProps) {
               </Link>
             );
           })}
-
-          <span className="sidebar__section-label sidebar__section-label--secondary">계정</span>
-          {futureNavigation.map(({ label, icon: Icon }) => (
-            <button className="sidebar__future-link" type="button" key={label}>
-              <Icon size={18} strokeWidth={2} />
-              <span>{label}</span>
-              <small>준비 중</small>
-            </button>
-          ))}
         </nav>
 
         <div className="sidebar__tip">
@@ -136,20 +155,55 @@ function AppShell({ children }: AppShellProps) {
               <Bell size={18} />
               <span />
             </button>
-            <button className="topbar__profile" type="button" onClick={() => void logout()} aria-label="로그아웃">
-              <span className="topbar__avatar">
-                {user?.profileImageUrl ? (
-                  <img src={user.profileImageUrl} alt="" />
-                ) : (
-                  (user?.nickname ?? user?.name ?? '생').slice(0, 1)
-                )}
-              </span>
-              <span className="topbar__profile-copy">
-                <strong>{user?.nickname ?? user?.name}</strong>
-                <small>로그아웃</small>
-              </span>
-              <ChevronDown size={15} />
-            </button>
+            <div className="topbar__account" ref={accountMenuRef}>
+              <button
+                className="topbar__profile"
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={isAccountMenuOpen}
+                aria-label="회원 메뉴 열기"
+                onClick={() => setIsAccountMenuOpen((current) => !current)}
+              >
+                <ProfileAvatar
+                  className="topbar__avatar"
+                  imageUrl={user?.profileImageUrl}
+                  name={user?.nickname ?? user?.name}
+                />
+                <span className="topbar__profile-copy">
+                  <strong>{user?.nickname ?? user?.name}</strong>
+                  <small>내 계정</small>
+                </span>
+                <ChevronDown className={isAccountMenuOpen ? 'is-open' : ''} size={15} />
+              </button>
+
+              {isAccountMenuOpen && (
+                <div className="topbar-account-menu" role="menu">
+                  <div className="topbar-account-menu__identity">
+                    <strong>{user?.nickname ?? user?.name}</strong>
+                    <span>{user?.email ?? '생존일기 회원'}</span>
+                  </div>
+                  <Link className="topbar-account-menu__item" href="/profile" role="menuitem">
+                    <UserRound size={17} />
+                    <span>
+                      <strong>마이페이지</strong>
+                      <small>내 정보 확인 및 수정</small>
+                    </span>
+                  </Link>
+                  <button
+                    className="topbar-account-menu__item topbar-account-menu__item--danger"
+                    type="button"
+                    role="menuitem"
+                    onClick={() => void confirmLogout()}
+                  >
+                    <LogOut size={17} />
+                    <span>
+                      <strong>로그아웃</strong>
+                      <small>현재 계정에서 나가기</small>
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

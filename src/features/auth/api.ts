@@ -1,6 +1,6 @@
 import type { ApiEnvelope, TokenData, User } from './types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api';
 
 let accessToken: string | null = null;
 let refreshRequest: Promise<string | null> | null = null;

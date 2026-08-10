@@ -1,4 +1,12 @@
-import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { getMe, logoutRequest, restoreAccessToken, setSessionExpiredHandler } from './api';
 import type { User } from './types';
 
@@ -6,6 +14,8 @@ interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
   completeLogin: () => Promise<void>;
+  refreshUser: () => Promise<User>;
+  updateUser: (user: User) => void;
   logout: () => Promise<void>;
 }
 
@@ -15,12 +25,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const clearSession = () => setUser(null);
+  const clearSession = useCallback(() => setUser(null), []);
 
-  const completeLogin = async () => {
+  const refreshUser = useCallback(async () => {
     const currentUser = await getMe();
     setUser(currentUser);
-  };
+    return currentUser;
+  }, []);
+
+  const completeLogin = useCallback(async () => {
+    await refreshUser();
+  }, [refreshUser]);
+
+  const updateUser = useCallback((currentUser: User) => setUser(currentUser), []);
 
   useEffect(() => {
     setSessionExpiredHandler(clearSession);
@@ -37,6 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       isLoading,
       completeLogin,
+      refreshUser,
+      updateUser,
       logout: async () => {
         try {
           await logoutRequest();
@@ -45,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       },
     }),
-    [user, isLoading],
+    [user, isLoading, completeLogin, refreshUser, updateUser, clearSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

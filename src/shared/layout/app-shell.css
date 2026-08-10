@@ -69,12 +69,7 @@
   letter-spacing: 0.08em;
 }
 
-.sidebar__section-label--secondary {
-  margin-top: var(--space-5);
-}
-
-.sidebar__link,
-.sidebar__future-link {
+.sidebar__link {
   display: flex;
   min-height: 2.75rem;
   align-items: center;
@@ -93,8 +88,7 @@
     background var(--transition-fast);
 }
 
-.sidebar__link:hover,
-.sidebar__future-link:hover {
+.sidebar__link:hover {
   color: var(--color-primary-800);
   background: var(--color-primary-50);
 }
@@ -102,12 +96,6 @@
 .sidebar__link--active {
   color: var(--color-primary-800);
   background: var(--color-primary-100);
-}
-
-.sidebar__future-link small {
-  margin-left: auto;
-  color: var(--color-ink-400);
-  font-size: 0.625rem;
 }
 
 .sidebar__tip {
@@ -219,22 +207,44 @@
   background: var(--color-danger);
 }
 
+.topbar__account {
+  position: relative;
+}
+
 .topbar__profile {
   display: flex;
   min-height: 2.75rem;
   align-items: center;
   gap: var(--space-2);
   margin-left: var(--space-2);
-  padding: 0;
+  padding: 0.25rem;
   border: 0;
   background: transparent;
   cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast);
+}
+
+.topbar__profile:hover,
+.topbar__profile[aria-expanded='true'] {
+  background: var(--color-primary-50);
+}
+
+.topbar__profile > svg {
+  color: var(--color-ink-400);
+  transition: transform var(--transition-fast);
+}
+
+.topbar__profile > svg.is-open {
+  transform: rotate(180deg);
 }
 
 .topbar__avatar {
   display: grid;
   width: 2.25rem;
   height: 2.25rem;
+  flex: 0 0 auto;
+  overflow: hidden;
   place-items: center;
   border-radius: 50%;
   color: var(--color-primary-900);
@@ -243,10 +253,12 @@
 }
 
 .topbar__avatar img {
+  display: block;
   width: 100%;
   height: 100%;
   border-radius: inherit;
   object-fit: cover;
+  object-position: center;
 }
 
 .topbar__profile-copy {
@@ -265,8 +277,113 @@
   font-size: 0.625rem;
 }
 
+.topbar-account-menu {
+  position: absolute;
+  top: calc(100% + 0.65rem);
+  right: 0;
+  z-index: 60;
+  width: 17.5rem;
+  overflow: hidden;
+  padding: 0.45rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: 0 18px 48px rgb(16 32 51 / 16%);
+  animation: account-menu-in 150ms ease-out;
+}
+
+.topbar-account-menu__identity {
+  display: flex;
+  min-width: 0;
+  padding: 0.65rem 0.75rem 0.85rem;
+  border-bottom: 1px solid var(--color-line);
+  flex-direction: column;
+}
+
+.topbar-account-menu__identity strong {
+  overflow: hidden;
+  font-size: 0.8125rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-account-menu__identity span {
+  margin-top: 0.15rem;
+  overflow: hidden;
+  color: var(--color-ink-500);
+  font-size: 0.625rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-account-menu__item {
+  display: grid;
+  width: 100%;
+  min-height: 3.5rem;
+  grid-template-columns: 1.8rem minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: 0.25rem;
+  padding: 0.45rem 0.65rem;
+  border: 0;
+  border-radius: var(--radius-md);
+  color: var(--color-ink-800);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition-fast);
+}
+
+.topbar-account-menu__item:hover {
+  background: var(--color-primary-50);
+}
+
+.topbar-account-menu__item > svg {
+  color: var(--color-primary-700);
+}
+
+.topbar-account-menu__item > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.topbar-account-menu__item strong {
+  font-size: 0.6875rem;
+}
+
+.topbar-account-menu__item small {
+  margin-top: 0.1rem;
+  color: var(--color-ink-400);
+  font-size: 0.5625rem;
+}
+
+.topbar-account-menu__item--danger {
+  color: #bd4747;
+}
+
+.topbar-account-menu__item--danger:hover {
+  background: var(--color-danger-soft);
+}
+
+.topbar-account-menu__item--danger > svg {
+  color: #bd4747;
+}
+
 .app-shell__main {
   min-width: 0;
+}
+
+@keyframes account-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.35rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 1024px) {
@@ -326,5 +443,16 @@
   .topbar__profile-copy,
   .topbar__actions > .icon-button:first-child {
     display: none;
+  }
+
+  .topbar-account-menu {
+    right: -0.25rem;
+    width: min(17.5rem, calc(100vw - 2rem));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar-account-menu {
+    animation: none;
   }
 }
