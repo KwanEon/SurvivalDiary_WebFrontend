@@ -12,6 +12,8 @@ const PolicyConditionsPage = lazy(() => import('../features/policies/pages/Polic
 const PolicyDetailPage = lazy(() => import('../features/policies/pages/PolicyDetailPage'));
 const SavingsMapPage = lazy(() => import('../features/savings-map'));
 const CommunityPage = lazy(() => import('../features/community'));
+const ProfilePage = lazy(() => import('../features/profile'));
+const ProfileEditPage = lazy(() => import('../features/profile/pages/ProfileEditPage'));
 
 function ProtectedApp() {
   const { user, isLoading } = useAuth();
@@ -32,6 +34,8 @@ function ProtectedApp() {
           <Route path="/policies" component={PoliciesPage} />
           <Route path="/map" component={SavingsMapPage} />
           <Route path="/community" component={CommunityPage} />
+          <Route path="/profile/edit" component={ProfileEditPage} />
+          <Route path="/profile" component={ProfilePage} />
           <Route component={DashboardPage} />
         </Switch>
       </Suspense>
