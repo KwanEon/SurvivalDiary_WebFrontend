@@ -9,6 +9,7 @@ const ExpenseEntryPage = lazy(() => import('../features/expense-entry'));
 const ExpenseStatisticsPage = lazy(() => import('../features/expense-statistics'));
 const PoliciesPage = lazy(() => import('../features/policies'));
 const PolicyConditionsPage = lazy(() => import('../features/policies/pages/PolicyConditionsPage'));
+const HiddenPoliciesPage = lazy(() => import('../features/policies/pages/HiddenPoliciesPage'));
 const PolicyDetailPage = lazy(() => import('../features/policies/pages/PolicyDetailPage'));
 const SavingsMapPage = lazy(() => import('../features/savings-map'));
 const CommunityPage = lazy(() => import('../features/community'));
@@ -30,6 +31,7 @@ function ProtectedApp() {
           <Route path="/expenses/new" component={ExpenseEntryPage} />
           <Route path="/expenses/statistics" component={ExpenseStatisticsPage} />
           <Route path="/policies/conditions" component={PolicyConditionsPage} />
+          <Route path="/policies/hidden" component={HiddenPoliciesPage} />
           <Route path="/policies/:policyId" component={PolicyDetailPage} />
           <Route path="/policies" component={PoliciesPage} />
           <Route path="/map" component={SavingsMapPage} />

@@ -3,7 +3,9 @@ import {
   Building2,
   ChevronRight,
   CircleDollarSign,
+  EyeOff,
   GraduationCap,
+  History,
   Landmark,
   MapPin,
   Search,
@@ -11,10 +13,17 @@ import {
   UserRoundCheck,
   UsersRound,
 } from 'lucide-react';
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
+import { useHistoryState } from 'wouter/use-browser-location';
 import { ApiError } from '../../auth';
-import { getPolicyPreference, getPolicyRecommendations } from '../api';
+import {
+  getPolicyPreference,
+  getPolicyRecommendations,
+  hidePolicy,
+  restoreHiddenPolicy,
+} from '../api';
+import PolicyActionToast from '../components/PolicyActionToast';
 import PolicyStateView from '../components/PolicyStateView';
 import { isAbortError, policyErrorMessage } from '../errors';
 import {
@@ -27,6 +36,8 @@ import type {
   PolicyApplicationPeriodType,
   PolicyCategory,
   PolicyDetailNavigationState,
+  PolicyHiddenNotice,
+  PolicyListNavigationState,
   PolicyPreference,
   PolicySummary,
   PolicySupportAmountType,
@@ -110,8 +121,24 @@ function mergePolicies(current: PolicySummary[], incoming: PolicySummary[]) {
   return [...byId.values()];
 }
 
+function hiddenPolicyRequest(policy: PolicySummary) {
+  const category = policy.category.trim().slice(0, 100);
+  const shortSummary = (policy.shortSummary || policy.summary).trim().slice(0, 500);
+  return {
+    title: policy.title.trim().slice(0, 200) || '청년 정책',
+    category: category || null,
+    shortSummary: shortSummary || null,
+  };
+}
+
+interface HiddenPolicyUndo extends PolicyHiddenNotice {
+  listIndex?: number;
+}
+
 function PoliciesPage() {
   const [, navigate] = useLocation();
+  const historyState = useHistoryState<PolicyListNavigationState | null>();
+  const consumedHiddenNotice = useRef<string | null>(null);
   const initialFilters = readFilters();
   const [category, setCategory] = useState<PolicyCategory | null>(initialFilters.category);
   const [keyword, setKeyword] = useState(initialFilters.keyword);
@@ -129,6 +156,21 @@ function PoliciesPage() {
   const [listReloadKey, setListReloadKey] = useState(0);
   const [moreLoading, setMoreLoading] = useState(false);
   const [moreError, setMoreError] = useState<string | null>(null);
+  const [hidingPolicyIds, setHidingPolicyIds] = useState<Set<string>>(() => new Set());
+  const [hiddenNotice, setHiddenNotice] = useState<HiddenPolicyUndo | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [undoing, setUndoing] = useState(false);
+
+  useEffect(() => {
+    const notice = historyState?.hiddenPolicy;
+    if (!notice) return;
+    const noticeKey = `${notice.policyId}:${notice.hiddenAt}`;
+    if (consumedHiddenNotice.current === noticeKey) return;
+    consumedHiddenNotice.current = noticeKey;
+    setActionError(null);
+    setHiddenNotice(notice);
+    window.history.replaceState(null, '', window.location.href);
+  }, [historyState]);
 
   useEffect(() => {
     const onPopState = () => {
@@ -230,6 +272,70 @@ function PoliciesPage() {
     }
   };
 
+  const handleHide = async (policy: PolicySummary) => {
+    if (hidingPolicyIds.has(policy.policyId)) return;
+    const listIndex = items.findIndex((item) => item.policyId === policy.policyId);
+    setHidingPolicyIds((current) => new Set(current).add(policy.policyId));
+    setItems((current) => current.filter((item) => item.policyId !== policy.policyId));
+    setHiddenNotice(null);
+    setActionError(null);
+
+    try {
+      const hidden = await hidePolicy(policy.policyId, hiddenPolicyRequest(policy));
+      setHiddenNotice({
+        policyId: policy.policyId,
+        title: policy.title,
+        hiddenAt: hidden.hiddenAt,
+        summary: policy,
+        listIndex,
+      });
+    } catch (error) {
+      setItems((current) => {
+        if (current.some((item) => item.policyId === policy.policyId)) return current;
+        const restored = [...current];
+        restored.splice(Math.max(0, Math.min(listIndex, restored.length)), 0, policy);
+        return restored;
+      });
+      setActionError(policyErrorMessage(error, '정책을 관심 없음으로 설정하지 못했습니다.'));
+    } finally {
+      setHidingPolicyIds((current) => {
+        const next = new Set(current);
+        next.delete(policy.policyId);
+        return next;
+      });
+    }
+  };
+
+  const handleUndoHide = async () => {
+    if (!hiddenNotice || undoing) return;
+    setUndoing(true);
+    setActionError(null);
+    try {
+      await restoreHiddenPolicy(hiddenNotice.policyId);
+      if (hiddenNotice.summary) {
+        setItems((current) => {
+          if (current.some((item) => item.policyId === hiddenNotice.policyId)) return current;
+          const restored = [...current];
+          const listIndex = hiddenNotice.listIndex ?? 0;
+          restored.splice(
+            Math.max(0, Math.min(listIndex, restored.length)),
+            0,
+            hiddenNotice.summary!,
+          );
+          return restored;
+        });
+      }
+      if (hiddenNotice.listIndex === undefined) {
+        setListReloadKey((current) => current + 1);
+      }
+      setHiddenNotice(null);
+    } catch (error) {
+      setActionError(policyErrorMessage(error, '정책을 다시 표시하지 못했습니다.'));
+    } finally {
+      setUndoing(false);
+    }
+  };
+
   const profileConditions = preference
     ? [
         preference.age ? `만 ${preference.age}세` : null,
@@ -273,9 +379,14 @@ function PoliciesPage() {
           <h1>청년 정책 추천</h1>
           <p>저장한 조건과 관련성이 높은 정책 후보를 확인해 보세요.</p>
         </div>
-        <Link href="/policies/conditions" className="button button--secondary">
-          <UserRoundCheck size={17} />내 조건 수정
-        </Link>
+        <div className="policies__heading-actions">
+          <Link href="/policies/hidden" className="button button--soft">
+            <History size={17} /> 관심 없음 정책
+          </Link>
+          <Link href="/policies/conditions" className="button button--secondary">
+            <UserRoundCheck size={17} /> 내 조건 수정
+          </Link>
+        </div>
       </div>
 
       {!preference?.saved ? (
@@ -460,6 +571,15 @@ function PoliciesPage() {
                       >
                         상세 보기 <ChevronRight size={15} />
                       </button>
+                      <button
+                        className="policy-card__hide"
+                        type="button"
+                        disabled={hidingPolicyIds.has(policy.policyId)}
+                        onClick={() => void handleHide(policy)}
+                        aria-label={`${policy.title} 관심 없음으로 설정`}
+                      >
+                        <EyeOff size={14} /> 관심 없음
+                      </button>
                     </div>
                   </article>
                 );
@@ -500,6 +620,22 @@ function PoliciesPage() {
           </article>
         </>
       )}
+
+      {actionError ? (
+        <PolicyActionToast
+          message={actionError}
+          tone="danger"
+          onClose={() => setActionError(null)}
+        />
+      ) : hiddenNotice ? (
+        <PolicyActionToast
+          message={`${hiddenNotice.title} 정책을 목록에서 숨겼어요.`}
+          actionLabel="실행 취소"
+          actionPending={undoing}
+          onAction={() => void handleUndoHide()}
+          onClose={() => setHiddenNotice(null)}
+        />
+      ) : null}
     </div>
   );
 }

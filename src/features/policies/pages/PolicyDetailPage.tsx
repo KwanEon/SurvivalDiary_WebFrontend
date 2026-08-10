@@ -2,6 +2,7 @@ import {
   ArrowLeft,
   Banknote,
   CalendarDays,
+  EyeOff,
   ExternalLink,
   FileCheck2,
   Info,
@@ -14,7 +15,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useRoute } from 'wouter';
 import { useHistoryState } from 'wouter/use-browser-location';
 import { ApiError } from '../../auth';
-import { getPolicyDetail } from '../api';
+import { getPolicyDetail, hidePolicy } from '../api';
 import PolicyExternalLinkDialog, {
   isAllowedPolicyExternalUrl,
   type PolicyExternalLinkRequest,
@@ -25,6 +26,7 @@ import { POLICY_CATEGORY_OPTIONS } from '../options';
 import type {
   PolicyDetail,
   PolicyDetailNavigationState,
+  PolicyListNavigationState,
   PolicyOfficialLinkType,
   PolicySummary,
   PolicySupportAmountType,
@@ -185,6 +187,8 @@ function PolicyDetailPage() {
   const [error, setError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [externalRequest, setExternalRequest] = useState<PolicyExternalLinkRequest | null>(null);
+  const [hiding, setHiding] = useState(false);
+  const [hideError, setHideError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!policyId) {
@@ -272,6 +276,40 @@ function PolicyDetailPage() {
   const openExternalLink = (request: PolicyExternalLinkRequest) => {
     if (!isAllowedPolicyExternalUrl(request.url)) return;
     setExternalRequest(request);
+  };
+
+  const handleHide = async () => {
+    if (hiding) return;
+    setHiding(true);
+    setHideError(null);
+
+    const category = policy.category.trim().slice(0, 100);
+    const shortSummary = normalizePolicyText(
+      summary?.shortSummary || summary?.summary || policy.description,
+    )
+      .trim()
+      .slice(0, 500);
+
+    try {
+      const hidden = await hidePolicy(policy.policyId, {
+        title: policy.title.trim().slice(0, 200) || '청년 정책',
+        category: category || null,
+        shortSummary: shortSummary || null,
+      });
+      const hiddenPolicy = {
+        policyId: policy.policyId,
+        title: policy.title,
+        hiddenAt: hidden.hiddenAt,
+        ...(summary ? { summary } : {}),
+      };
+      navigate('/policies', {
+        replace: true,
+        state: { hiddenPolicy } satisfies PolicyListNavigationState,
+      });
+    } catch (requestError) {
+      setHideError(policyErrorMessage(requestError, '정책을 관심 없음으로 설정하지 못했습니다.'));
+      setHiding(false);
+    }
   };
 
   return (
@@ -464,6 +502,19 @@ function PolicyDetailPage() {
         <aside className="ui-card policy-detail__action-card">
           <h2>신청 전 꼭 확인하세요</h2>
           <p>추천 결과는 신청 자격을 확정하지 않습니다. 제공기관의 최신 공고를 확인해 주세요.</p>
+          <button
+            className="button button--secondary policy-detail__hide-button"
+            type="button"
+            disabled={hiding}
+            onClick={() => void handleHide()}
+          >
+            <EyeOff size={17} /> {hiding ? '숨기는 중...' : '목록 숨기기'}
+          </button>
+          {hideError ? (
+            <p className="policy-detail__action-error" role="alert">
+              {hideError}
+            </p>
+          ) : null}
           <button
             className="button button--primary"
             type="button"
