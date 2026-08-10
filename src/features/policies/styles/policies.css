@@ -296,11 +296,23 @@
   overflow-wrap: anywhere;
 }
 
-.policy-card__action > small {
+.policy-card__detail {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   max-width: 12rem;
   margin-top: var(--space-3);
-  color: var(--color-ink-400);
-  font-size: 0.625rem;
+  padding: 0;
+  border: 0;
+  color: var(--color-primary-700);
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.policy-card__detail:hover {
+  color: var(--color-primary-900);
 }
 
 .policies__more {
@@ -437,7 +449,7 @@
     margin: 0;
   }
 
-  .policy-card__action > small {
+  .policy-card__detail {
     grid-column: 1 / -1;
     max-width: none;
     margin-top: var(--space-1);
