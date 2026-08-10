@@ -1,188 +1,352 @@
 import {
+  AlertCircle,
+  Bus,
   CalendarDays,
-  ChevronDown,
+  Check,
   CircleCheck,
-  Info,
-  Paperclip,
+  Coffee,
+  CreditCard,
+  LoaderCircle,
   ReceiptText,
-  Smartphone,
+  ShoppingBag,
+  Utensils,
+  WalletCards,
+  type LucideIcon,
 } from 'lucide-react';
-import { expenseCategories } from '../mocks';
+import { type FormEvent, useMemo, useState } from 'react';
+import { useAuth } from '../../auth/AuthContext';
+import { createManualExpense } from '../api';
 import '../styles/expense-entry.css';
 
+const maxExpenseAmount = 2_147_483_647;
+const earliestExpenseDate = '2024-01-01';
+const wonFormatter = new Intl.NumberFormat('ko-KR');
+
+const categories: Array<{
+  id: number;
+  label: string;
+  icon: LucideIcon;
+  tone: 'food' | 'cafe' | 'transport' | 'shopping' | 'etc';
+}> = [
+  { id: 1, label: '식비', icon: Utensils, tone: 'food' },
+  { id: 2, label: '카페', icon: Coffee, tone: 'cafe' },
+  { id: 3, label: '교통', icon: Bus, tone: 'transport' },
+  { id: 4, label: '쇼핑', icon: ShoppingBag, tone: 'shopping' },
+  { id: 5, label: '기타', icon: CreditCard, tone: 'etc' },
+];
+
+interface FormErrors {
+  category?: string;
+  title?: string;
+  amount?: string;
+  spentAt?: string;
+  memo?: string;
+  submit?: string;
+}
+
+function localDateValue(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+    date.getDate(),
+  ).padStart(2, '0')}`;
+}
+
+function readableDate(value: string) {
+  if (!value) return '선택 안 함';
+  const [year, month, day] = value.split('-');
+  return `${year}년 ${Number(month)}월 ${Number(day)}일`;
+}
+
 function ExpenseEntryPage() {
+  const { user } = useAuth();
+  const today = useMemo(() => localDateValue(), []);
+  const [categoryId, setCategoryId] = useState<number | null>(null);
+  const [title, setTitle] = useState('');
+  const [amount, setAmount] = useState('');
+  const [spentAt, setSpentAt] = useState('');
+  const [memo, setMemo] = useState('');
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [saving, setSaving] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+
+  const selectedCategory = categories.find((category) => category.id === categoryId);
+  const numericAmount = Number(amount.replaceAll(',', '')) || 0;
+
+  const clearError = (field: keyof FormErrors) => {
+    setErrors((current) => ({ ...current, [field]: undefined, submit: undefined }));
+    setSuccessMessage('');
+  };
+
+  const changeAmount = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 10);
+    setAmount(digits ? wonFormatter.format(Number(digits)) : '');
+    clearError('amount');
+  };
+
+  const validate = () => {
+    const nextErrors: FormErrors = {};
+    const trimmedTitle = title.trim();
+    const trimmedMemo = memo.trim();
+
+    if (categoryId === null) nextErrors.category = '카테고리를 선택해 주세요.';
+    if (!trimmedTitle) nextErrors.title = '지출 내용을 입력해 주세요.';
+    else if (trimmedTitle.length > 100)
+      nextErrors.title = '지출 내용은 100자 이하로 입력해 주세요.';
+    if (!amount) nextErrors.amount = '금액을 입력해 주세요.';
+    else if (numericAmount <= 0) nextErrors.amount = '올바른 금액을 입력해 주세요.';
+    else if (numericAmount > maxExpenseAmount)
+      nextErrors.amount = '금액은 2,147,483,647원 이하로 입력해 주세요.';
+    if (!spentAt) nextErrors.spentAt = '날짜를 선택해 주세요.';
+    else if (spentAt > today) nextErrors.spentAt = '오늘 이후 날짜는 선택할 수 없어요.';
+    else if (spentAt < earliestExpenseDate)
+      nextErrors.spentAt = '2024년 이후 날짜를 선택해 주세요.';
+    if (trimmedMemo.length > 200) nextErrors.memo = '메모는 200자 이하로 입력해 주세요.';
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const saveExpense = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSuccessMessage('');
+    if (!validate()) return;
+    if (!user || categoryId === null) {
+      setErrors({ submit: '지출을 저장하려면 로그인이 필요해요.' });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await createManualExpense({
+        userId: user.userId,
+        categoryId,
+        title: title.trim(),
+        amount: numericAmount,
+        spentAt: `${spentAt}T00:00:00`,
+        memo: memo.trim() || null,
+      });
+      setCategoryId(null);
+      setTitle('');
+      setAmount('');
+      setSpentAt('');
+      setMemo('');
+      setErrors({});
+      setSuccessMessage('지출이 등록되었습니다.');
+    } catch (saveError) {
+      setErrors({
+        submit:
+          saveError instanceof Error
+            ? saveError.message
+            : '지출을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="page expense-entry">
-      <div className="page-heading">
+      <div className="page-heading expense-entry__heading">
         <div>
-          <p className="page-heading__eyebrow">Expense diary</p>
+          <p className="page-heading__eyebrow">Manual expense</p>
           <h1>지출 등록</h1>
-          <p>오늘의 지출을 기록하고 남은 하루 예산을 확인해 보세요.</p>
+          <p>알림 감지 없이 직접 입력한 지출만 안전하게 기록해요.</p>
         </div>
         <span className="expense-entry__today">
-          <CalendarDays size={16} />
-          2024년 5월 12일
+          <CalendarDays size={16} /> {readableDate(today)}
         </span>
       </div>
 
       <div className="expense-entry__layout">
-        <section className="ui-card expense-entry__form" aria-labelledby="expense-form-title">
+        <form
+          className="ui-card expense-entry__form"
+          noValidate
+          onSubmit={(event) => void saveExpense(event)}
+        >
           <div className="expense-entry__form-header">
             <span className="expense-entry__form-icon">
               <ReceiptText size={21} />
             </span>
             <div>
-              <h2 id="expense-form-title">지출 정보</h2>
-              <p>필수 항목만 입력하면 간단히 기록할 수 있어요.</p>
+              <h2>직접 지출 입력</h2>
+              <p>필수 항목만 입력하면 App과 같은 방식으로 기록할 수 있어요.</p>
             </div>
-            <span className="status-badge">직접 입력</span>
+            <span className="status-badge">
+              <Check size={13} /> 직접 입력
+            </span>
           </div>
 
-          <div className="expense-entry__group">
-            <div className="expense-entry__label-row">
-              <label>카테고리</label>
-              <small>하나를 선택해 주세요.</small>
+          {successMessage && (
+            <div className="expense-entry-message expense-entry-message--success" role="status">
+              <CircleCheck size={18} /> {successMessage}
             </div>
+          )}
+
+          {errors.submit && (
+            <div className="expense-entry-message expense-entry-message--error" role="alert">
+              <AlertCircle size={18} /> {errors.submit}
+            </div>
+          )}
+
+          <fieldset className="expense-entry__group">
+            <legend>카테고리</legend>
+            <small>하나를 선택해 주세요.</small>
             <div className="expense-entry__categories">
-              {expenseCategories.map(({ label, icon: Icon }, index) => (
+              {categories.map(({ id, label, icon: Icon, tone }) => (
                 <button
-                  className={`expense-entry__category ${
-                    index === 0 ? 'expense-entry__category--active' : ''
+                  className={`expense-entry__category expense-entry__category--${tone} ${
+                    categoryId === id ? 'is-active' : ''
                   }`}
                   type="button"
-                  key={label}
+                  role="radio"
+                  aria-checked={categoryId === id}
+                  key={id}
+                  onClick={() => {
+                    setCategoryId(id);
+                    clearError('category');
+                  }}
                 >
-                  <Icon size={20} />
-                  <span>{label}</span>
+                  <span>
+                    <Icon size={20} />
+                  </span>
+                  <strong>{label}</strong>
                 </button>
               ))}
             </div>
-          </div>
+            {errors.category && <p className="expense-entry__field-error">{errors.category}</p>}
+          </fieldset>
+
+          <label className="expense-entry__field">
+            <span>지출 내용</span>
+            <input
+              value={title}
+              maxLength={100}
+              placeholder="예: 점심 김치찌개"
+              aria-invalid={Boolean(errors.title)}
+              onChange={(event) => {
+                setTitle(event.target.value);
+                clearError('title');
+              }}
+            />
+            {errors.title && <small className="expense-entry__field-error">{errors.title}</small>}
+          </label>
 
           <div className="expense-entry__row">
             <label className="expense-entry__field">
-              <span>결제 수단</span>
-              <span className="expense-entry__select">
-                <select defaultValue="card">
-                  <option value="card">신용카드</option>
-                  <option value="check">체크카드</option>
-                  <option value="cash">현금</option>
-                  <option value="transfer">계좌이체</option>
-                </select>
-                <ChevronDown size={16} />
+              <span>금액</span>
+              <span className="expense-entry__amount">
+                <input
+                  value={amount}
+                  inputMode="numeric"
+                  placeholder="숫자만 입력"
+                  aria-invalid={Boolean(errors.amount)}
+                  onChange={(event) => changeAmount(event.target.value)}
+                />
+                <small>원</small>
               </span>
+              {errors.amount && (
+                <small className="expense-entry__field-error">{errors.amount}</small>
+              )}
             </label>
 
             <label className="expense-entry__field">
-              <span>금액</span>
-              <span className="expense-entry__amount">
-                <input type="text" inputMode="numeric" defaultValue="12,500" />
-                <small>원</small>
+              <span>지출 날짜</span>
+              <span className="expense-entry__input-with-icon">
+                <input
+                  type="date"
+                  value={spentAt}
+                  min={earliestExpenseDate}
+                  max={today}
+                  aria-invalid={Boolean(errors.spentAt)}
+                  onChange={(event) => {
+                    setSpentAt(event.target.value);
+                    clearError('spentAt');
+                  }}
+                />
+                <CalendarDays size={17} />
               </span>
+              {errors.spentAt && (
+                <small className="expense-entry__field-error">{errors.spentAt}</small>
+              )}
             </label>
           </div>
-
-          <label className="expense-entry__field">
-            <span>지출 일자</span>
-            <span className="expense-entry__input-with-icon">
-              <input type="text" defaultValue="2024.05.12" />
-              <CalendarDays size={17} />
-            </span>
-          </label>
-
-          <label className="expense-entry__field">
-            <span>사용처</span>
-            <input type="text" placeholder="예: 스타벅스 강남점" />
-          </label>
 
           <label className="expense-entry__field">
             <span>
               메모 <small>(선택)</small>
             </span>
-            <textarea rows={3} placeholder="지출에 대한 메모를 남겨 주세요." />
+            <textarea
+              value={memo}
+              rows={3}
+              maxLength={200}
+              placeholder="기억할 내용을 남겨 보세요."
+              aria-invalid={Boolean(errors.memo)}
+              onChange={(event) => {
+                setMemo(event.target.value);
+                clearError('memo');
+              }}
+            />
+            <span className="expense-entry__memo-meta">
+              {errors.memo ? (
+                <small className="expense-entry__field-error">{errors.memo}</small>
+              ) : (
+                <i />
+              )}
+              <small>{memo.length}/200</small>
+            </span>
           </label>
 
-          <div className="expense-entry__receipt">
-            <div className="expense-entry__label-row">
-              <label>영수증 사진 첨부</label>
-              <small>선택 · JPG, PNG</small>
-            </div>
-            <button className="expense-entry__dropzone" type="button">
-              <span>
-                <Paperclip size={19} />
-              </span>
-              <strong>파일을 놓거나 클릭해서 선택하세요</strong>
-              <small>파일당 최대 10MB</small>
-            </button>
-          </div>
-
-          <div className="expense-entry__actions">
-            <button className="button button--secondary" type="button">
-              취소
-            </button>
-            <button className="button button--primary" type="button">
-              기록하기
-            </button>
-          </div>
-        </section>
+          <button
+            className="button button--primary expense-entry__submit"
+            type="submit"
+            disabled={saving}
+          >
+            {saving ? <LoaderCircle className="spin" size={18} /> : <ReceiptText size={18} />}
+            {saving ? '저장 중...' : '지출 저장'}
+          </button>
+        </form>
 
         <aside className="expense-entry__aside">
-          <article className="ui-card expense-entry-budget">
-            <div className="expense-entry-budget__top">
-              <span className="expense-entry-budget__icon">
-                <CircleCheck size={19} />
-              </span>
-              <span className="status-badge">여유</span>
-            </div>
-            <p>오늘 남은 사용 가능 금액</p>
-            <strong>23,100원</strong>
-            <div className="expense-entry-budget__bar">
-              <span style={{ width: '67%' }} />
-            </div>
-            <div className="expense-entry-budget__meta">
-              <span>사용 11,900원</span>
-              <span>한도 35,000원</span>
-            </div>
-          </article>
-
           <article className="ui-card expense-entry-preview">
-            <div className="ui-card__header">
-              <h2>등록 전 확인</h2>
+            <div className="expense-entry-preview__heading">
+              <span>
+                <WalletCards size={19} />
+              </span>
+              <div>
+                <small>Before saving</small>
+                <h2>등록 전 확인</h2>
+              </div>
             </div>
             <dl>
               <div>
-                <dt>카테고리</dt>
-                <dd>식비</dd>
+                <dt>등록 방식</dt>
+                <dd>직접 입력</dd>
               </div>
               <div>
-                <dt>결제 수단</dt>
-                <dd>신용카드</dd>
+                <dt>카테고리</dt>
+                <dd>{selectedCategory?.label ?? '선택 전'}</dd>
+              </div>
+              <div>
+                <dt>지출 날짜</dt>
+                <dd>{readableDate(spentAt)}</dd>
               </div>
               <div>
                 <dt>기록 금액</dt>
-                <dd>12,500원</dd>
-              </div>
-              <div>
-                <dt>등록 후 잔액</dt>
-                <dd className="expense-entry-preview__accent">10,600원</dd>
+                <dd className="expense-entry-preview__accent">
+                  {numericAmount ? `${wonFormatter.format(numericAmount)}원` : '0원'}
+                </dd>
               </div>
             </dl>
           </article>
 
-          <article className="expense-entry-mobile-note">
+          <article className="expense-entry-guide">
             <span>
-              <Smartphone size={19} />
+              <Check size={18} />
             </span>
             <div>
-              <strong>모바일 결제 알림 연동</strong>
-              <p>앱에서 감지한 결제 내역은 추후 서버 동기화 후 웹에서도 확인할 수 있어요.</p>
+              <strong>직접 입력만 사용해요</strong>
+              <p>결제 알림 감지나 자동 등록 없이 입력한 내용만 저장돼요.</p>
             </div>
           </article>
-
-          <div className="expense-entry__notice">
-            <Info size={16} />
-            <p>현재 화면은 UI 목업이며 저장 기능은 다음 개발 단계에서 연결합니다.</p>
-          </div>
         </aside>
       </div>
     </div>
