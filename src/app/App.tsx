@@ -8,6 +8,7 @@ const DashboardPage = lazy(() => import('../features/dashboard'));
 const ExpenseEntryPage = lazy(() => import('../features/expense-entry'));
 const ExpenseStatisticsPage = lazy(() => import('../features/expense-statistics'));
 const PoliciesPage = lazy(() => import('../features/policies'));
+const PolicyConditionsPage = lazy(() => import('../features/policies/pages/PolicyConditionsPage'));
 const SavingsMapPage = lazy(() => import('../features/savings-map'));
 const CommunityPage = lazy(() => import('../features/community'));
 
@@ -25,6 +26,7 @@ function ProtectedApp() {
           <Route path="/" component={DashboardPage} />
           <Route path="/expenses/new" component={ExpenseEntryPage} />
           <Route path="/expenses/statistics" component={ExpenseStatisticsPage} />
+          <Route path="/policies/conditions" component={PolicyConditionsPage} />
           <Route path="/policies" component={PoliciesPage} />
           <Route path="/map" component={SavingsMapPage} />
           <Route path="/community" component={CommunityPage} />
@@ -40,15 +42,25 @@ function AppRoutes() {
     <Switch>
       <Route path="/login" component={LoginPage} />
       <Route path="/signup" component={SignupPage} />
-      <Route path="/auth/callback/kakao"><SocialCallbackPage provider="kakao" /></Route>
-      <Route path="/auth/callback/naver"><SocialCallbackPage provider="naver" /></Route>
-      <Route><ProtectedApp /></Route>
+      <Route path="/auth/callback/kakao">
+        <SocialCallbackPage provider="kakao" />
+      </Route>
+      <Route path="/auth/callback/naver">
+        <SocialCallbackPage provider="naver" />
+      </Route>
+      <Route>
+        <ProtectedApp />
+      </Route>
     </Switch>
   );
 }
 
 function App() {
-  return <AuthProvider><AppRoutes /></AuthProvider>;
+  return (
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
+  );
 }
 
 export default App;
