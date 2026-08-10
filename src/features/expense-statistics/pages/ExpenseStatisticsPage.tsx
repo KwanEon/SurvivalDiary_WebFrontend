@@ -1,222 +1,686 @@
 import {
-  ArrowDownRight,
+  AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  Bus,
+  CalendarDays,
   CalendarRange,
+  Check,
   ChevronLeft,
   ChevronRight,
-  Download,
-  Filter,
-  Lightbulb,
-  TrendingDown,
+  Coffee,
+  CreditCard,
+  Info,
+  LoaderCircle,
+  ReceiptText,
+  RefreshCw,
+  ShoppingBag,
+  Trash2,
+  Utensils,
   WalletCards,
+  X,
+  type LucideIcon,
 } from 'lucide-react';
-import { categoryBreakdown, dailySpending } from '../mocks';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { deleteExpense, getExpenses } from '../api';
+import type {
+  CategoryStatistic,
+  ExpenseRecord,
+  PeriodComparison,
+  StatisticsPeriod,
+  TrendItem,
+} from '../types';
 import '../styles/expense-statistics.css';
 
+const wonFormatter = new Intl.NumberFormat('ko-KR');
+
+const categories: Record<
+  number,
+  { label: string; icon: LucideIcon; tone: 'food' | 'cafe' | 'transport' | 'shopping' | 'etc' }
+> = {
+  1: { label: '식비', icon: Utensils, tone: 'food' },
+  2: { label: '카페', icon: Coffee, tone: 'cafe' },
+  3: { label: '교통', icon: Bus, tone: 'transport' },
+  4: { label: '쇼핑', icon: ShoppingBag, tone: 'shopping' },
+  5: { label: '기타', icon: CreditCard, tone: 'etc' },
+};
+
+function formatWon(amount: number) {
+  return `${wonFormatter.format(amount)}원`;
+}
+
+function compactWon(amount: number) {
+  if (amount >= 100_000_000) return `${(amount / 100_000_000).toFixed(1).replace('.0', '')}억`;
+  if (amount >= 10_000) return `${(amount / 10_000).toFixed(1).replace('.0', '')}만`;
+  return wonFormatter.format(amount);
+}
+
+function dateOnly(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function parseDate(value: string) {
+  return new Date(value);
+}
+
+function isInPeriod(expense: ExpenseRecord, visibleDate: Date, period: StatisticsPeriod) {
+  const spentAt = parseDate(expense.spentAt);
+  if (
+    spentAt.getFullYear() !== visibleDate.getFullYear() ||
+    spentAt.getMonth() !== visibleDate.getMonth()
+  ) {
+    return false;
+  }
+  return period === 'monthly' || spentAt.getDate() === visibleDate.getDate();
+}
+
+function totalAmount(expenses: ExpenseRecord[]) {
+  return expenses.reduce((total, expense) => total + expense.amount, 0);
+}
+
+function previousPeriod(date: Date, period: StatisticsPeriod) {
+  return period === 'daily'
+    ? new Date(date.getFullYear(), date.getMonth(), date.getDate() - 1)
+    : new Date(date.getFullYear(), date.getMonth() - 1, 1);
+}
+
+function movePeriod(date: Date, period: StatisticsPeriod, offset: number) {
+  return period === 'daily'
+    ? new Date(date.getFullYear(), date.getMonth(), date.getDate() + offset)
+    : new Date(date.getFullYear(), date.getMonth() + offset, 1);
+}
+
+function periodLabel(date: Date, period: StatisticsPeriod) {
+  return period === 'daily'
+    ? `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`
+    : `${date.getFullYear()}년 ${date.getMonth() + 1}월`;
+}
+
+function categoryStatistics(expenses: ExpenseRecord[], total: number): CategoryStatistic[] {
+  return Object.entries(categories).map(([categoryId, meta]) => {
+    const amount = expenses
+      .filter((expense) => expense.categoryId === Number(categoryId))
+      .reduce((sum, expense) => sum + expense.amount, 0);
+    return {
+      categoryId: Number(categoryId),
+      label: meta.label,
+      amount,
+      ratio: total === 0 ? 0 : amount / total,
+    };
+  });
+}
+
+function categoryComparison(
+  currentExpenses: ExpenseRecord[],
+  previousExpenses: ExpenseRecord[],
+): PeriodComparison[] {
+  return Object.entries(categories).map(([categoryId, meta]) => {
+    const id = Number(categoryId);
+    return {
+      categoryId: id,
+      label: meta.label,
+      current: totalAmount(currentExpenses.filter((expense) => expense.categoryId === id)),
+      previous: totalAmount(previousExpenses.filter((expense) => expense.categoryId === id)),
+    };
+  });
+}
+
+function trendData(expenses: ExpenseRecord[], period: StatisticsPeriod): TrendItem[] {
+  const now = dateOnly(new Date());
+  return Array.from({ length: 7 }, (_, index) => {
+    const offset = index - 6;
+    const date =
+      period === 'daily'
+        ? new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset)
+        : new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    const amount = totalAmount(
+      expenses.filter((expense) => {
+        const spentAt = parseDate(expense.spentAt);
+        return period === 'daily'
+          ? spentAt.getFullYear() === date.getFullYear() &&
+              spentAt.getMonth() === date.getMonth() &&
+              spentAt.getDate() === date.getDate()
+          : spentAt.getFullYear() === date.getFullYear() && spentAt.getMonth() === date.getMonth();
+      }),
+    );
+    return {
+      label:
+        period === 'daily'
+          ? `${date.getMonth() + 1}/${date.getDate()}`
+          : `${date.getMonth() + 1}월`,
+      amount,
+    };
+  });
+}
+
+function comparisonMessage(current: number, previous: number, period: StatisticsPeriod) {
+  const previousLabel = period === 'daily' ? '어제' : '지난달';
+  const equalLabel = period === 'daily' ? '어제와' : '지난달과';
+  if (current === previous) {
+    return { tone: 'same' as const, text: `${equalLabel} 같은 금액을 사용했어요.`, ratio: null };
+  }
+  if (previous === 0) {
+    return { tone: 'none' as const, text: `${previousLabel} 지출 내역이 없어요.`, ratio: null };
+  }
+  const ratio = (Math.abs(current - previous) / previous) * 100;
+  return current > previous
+    ? {
+        tone: 'up' as const,
+        text: `${previousLabel}보다 ${ratio.toFixed(1)}% 늘었어요.`,
+        ratio,
+      }
+    : {
+        tone: 'down' as const,
+        text: `${previousLabel}보다 ${ratio.toFixed(1)}% 줄었어요.`,
+        ratio,
+      };
+}
+
+function expenseDateLabel(value: string) {
+  const date = parseDate(value);
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(
+    date.getDate(),
+  ).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(
+    date.getMinutes(),
+  ).padStart(2, '0')}`;
+}
+
+interface ExpenseListDialogProps {
+  title: string;
+  expenses: ExpenseRecord[];
+  onClose: () => void;
+  onDelete: (expense: ExpenseRecord) => Promise<void>;
+}
+
+function ExpenseListDialog({ title, expenses, onClose, onDelete }: ExpenseListDialogProps) {
+  const [pendingDelete, setPendingDelete] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && deletingId === null) onClose();
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', closeOnEscape);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [deletingId, onClose]);
+
+  const removeExpense = async (expense: ExpenseRecord) => {
+    if (pendingDelete !== expense.expenseId) {
+      setPendingDelete(expense.expenseId);
+      setError('');
+      return;
+    }
+    setDeletingId(expense.expenseId);
+    setError('');
+    try {
+      await onDelete(expense);
+      setPendingDelete(null);
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : '지출을 삭제하지 못했어요.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  return (
+    <div className="expense-list-dialog" role="presentation" onMouseDown={onClose}>
+      <section
+        className="expense-list-dialog__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="expense-list-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="expense-list-dialog__header">
+          <div>
+            <span>Expense records</span>
+            <h2 id="expense-list-title">{title}</h2>
+          </div>
+          <button type="button" onClick={onClose} aria-label="지출 목록 닫기">
+            <X size={20} />
+          </button>
+        </div>
+
+        {error && (
+          <div className="expense-list-dialog__error" role="alert">
+            <AlertTriangle size={17} />
+            {error}
+          </div>
+        )}
+
+        <div className="expense-list-dialog__list">
+          {expenses.length === 0 ? (
+            <div className="expense-list-dialog__empty">
+              <ReceiptText size={27} />
+              <strong>등록된 지출이 없어요</strong>
+              <p>이 기간에 기록한 지출이 생기면 여기에 표시돼요.</p>
+            </div>
+          ) : (
+            expenses.map((expense) => {
+              const meta = categories[expense.categoryId] ?? categories[5];
+              const Icon = meta.icon;
+              const isConfirming = pendingDelete === expense.expenseId;
+              const isDeleting = deletingId === expense.expenseId;
+              return (
+                <article className="expense-list-item" key={expense.expenseId}>
+                  <span className={`expense-category-icon expense-category-icon--${meta.tone}`}>
+                    <Icon size={18} />
+                  </span>
+                  <div className="expense-list-item__copy">
+                    <div>
+                      <strong>{expense.title}</strong>
+                      <span>{meta.label}</span>
+                    </div>
+                    <small>{expenseDateLabel(expense.spentAt)}</small>
+                    {expense.memo && <p>{expense.memo}</p>}
+                  </div>
+                  <strong className="expense-list-item__amount">
+                    -{formatWon(expense.amount)}
+                  </strong>
+                  <button
+                    className={isConfirming ? 'is-confirming' : ''}
+                    type="button"
+                    disabled={isDeleting}
+                    onClick={() => void removeExpense(expense)}
+                    aria-label={
+                      isConfirming ? `${expense.title} 삭제 확인` : `${expense.title} 삭제`
+                    }
+                  >
+                    {isDeleting ? (
+                      <LoaderCircle className="spin" size={16} />
+                    ) : isConfirming ? (
+                      <>
+                        <Check size={15} /> 삭제할게요
+                      </>
+                    ) : (
+                      <Trash2 size={16} />
+                    )}
+                  </button>
+                </article>
+              );
+            })
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function ExpenseStatisticsPage() {
+  const now = useMemo(() => dateOnly(new Date()), []);
+  const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
+  const [period, setPeriod] = useState<StatisticsPeriod>('monthly');
+  const [visibleDate, setVisibleDate] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [listOpen, setListOpen] = useState(false);
+
+  const loadExpenses = useCallback(async (signal?: AbortSignal, background = false) => {
+    if (background) setRefreshing(true);
+    else setLoading(true);
+    setLoadError('');
+    try {
+      const nextExpenses = await getExpenses(signal);
+      if (signal?.aborted) return;
+      setExpenses(nextExpenses);
+    } catch (error) {
+      if (signal?.aborted) return;
+      setLoadError(error instanceof Error ? error.message : '지출 통계를 불러오지 못했어요.');
+    } finally {
+      if (!signal?.aborted) {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadExpenses(controller.signal);
+    return () => controller.abort();
+  }, [loadExpenses]);
+
+  const changePeriod = (nextPeriod: StatisticsPeriod) => {
+    if (nextPeriod === period) return;
+    setPeriod(nextPeriod);
+    setVisibleDate((current) => {
+      if (nextPeriod === 'daily') {
+        const isCurrentMonth =
+          current.getFullYear() === now.getFullYear() && current.getMonth() === now.getMonth();
+        return isCurrentMonth ? now : new Date(current.getFullYear(), current.getMonth() + 1, 0);
+      }
+      return new Date(current.getFullYear(), current.getMonth(), 1);
+    });
+  };
+
+  const currentExpenses = useMemo(
+    () =>
+      expenses
+        .filter((expense) => isInPeriod(expense, visibleDate, period))
+        .sort((left, right) => right.spentAt.localeCompare(left.spentAt)),
+    [expenses, period, visibleDate],
+  );
+  const previousDate = previousPeriod(visibleDate, period);
+  const previousExpenses = useMemo(
+    () => expenses.filter((expense) => isInPeriod(expense, previousDate, period)),
+    [expenses, period, previousDate],
+  );
+  const total = totalAmount(currentExpenses);
+  const previousTotal = totalAmount(previousExpenses);
+  const categoryStats = categoryStatistics(currentExpenses, total);
+  const comparisons = categoryComparison(currentExpenses, previousExpenses);
+  const trend = trendData(expenses, period);
+  const comparison = comparisonMessage(total, previousTotal, period);
+  const trendMax = Math.max(...trend.map((item) => item.amount), 1);
+  const compareMax = Math.max(...comparisons.flatMap((item) => [item.current, item.previous]), 1);
+  const hasComparisonData = comparisons.some((item) => item.current > 0 || item.previous > 0);
+  const limit = period === 'daily' ? now : new Date(now.getFullYear(), now.getMonth(), 1);
+  const canMoveNext = movePeriod(visibleDate, period, 1).getTime() <= limit.getTime();
+
+  const move = (offset: number) => {
+    const target = movePeriod(visibleDate, period, offset);
+    if (target.getTime() > limit.getTime()) return;
+    setVisibleDate(target);
+  };
+
+  const removeExpense = async (expense: ExpenseRecord) => {
+    await deleteExpense(expense.expenseId);
+    setExpenses((current) => current.filter((item) => item.expenseId !== expense.expenseId));
+  };
+
+  if (loading) {
+    return (
+      <div className="page expense-statistics expense-statistics--loading" aria-busy="true">
+        <div className="expense-statistics-loading__heading" />
+        <div className="expense-statistics-loading__toolbar" />
+        <div className="expense-statistics-loading__hero" />
+        <div className="expense-statistics-loading__grid">
+          <span />
+          <span />
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError && expenses.length === 0) {
+    return (
+      <div className="page expense-statistics">
+        <section className="ui-card expense-statistics-load-error" role="alert">
+          <AlertTriangle size={35} />
+          <h1>지출 통계를 불러오지 못했어요</h1>
+          <p>{loadError}</p>
+          <button
+            className="button button--primary"
+            type="button"
+            onClick={() => void loadExpenses()}
+          >
+            <RefreshCw size={17} /> 다시 불러오기
+          </button>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="page expense-statistics">
-      <div className="page-heading">
+      <div className="page-heading expense-statistics__heading">
         <div>
           <p className="page-heading__eyebrow">Spending insight</p>
           <h1>지출 통계</h1>
           <p>카테고리와 기간별 소비 흐름을 한눈에 비교해 보세요.</p>
         </div>
-        <button className="button button--secondary" type="button">
-          <Download size={16} />
-          내역 내려받기
+        <button
+          className="button button--secondary"
+          type="button"
+          disabled={refreshing}
+          onClick={() => void loadExpenses(undefined, true)}
+        >
+          <RefreshCw className={refreshing ? 'spin' : ''} size={17} />
+          {refreshing ? '새로 고침 중' : '새로 고침'}
         </button>
       </div>
 
-      <div className="expense-statistics__tabs" role="tablist" aria-label="통계 종류">
-        <button type="button" role="tab">
-          개요
-        </button>
-        <button className="expense-statistics__tab--active" type="button" role="tab">
-          카테고리 분석
-        </button>
-        <button type="button" role="tab">
-          월별 비교
-        </button>
-        <button type="button" role="tab">
-          예산 비교
-        </button>
-      </div>
-
-      <div className="expense-statistics__toolbar">
-        <div className="expense-statistics__month">
-          <button type="button" aria-label="이전 달">
-            <ChevronLeft size={17} />
-          </button>
-          <span>
-            <CalendarRange size={16} />
-            2024년 5월
-          </span>
-          <button type="button" aria-label="다음 달">
-            <ChevronRight size={17} />
+      {loadError && (
+        <div className="expense-statistics-inline-error" role="alert">
+          <AlertTriangle size={18} />
+          <span>{loadError}</span>
+          <button type="button" onClick={() => void loadExpenses(undefined, true)}>
+            다시 시도
           </button>
         </div>
-        <button className="button button--secondary" type="button">
-          <Filter size={16} />
-          필터
+      )}
+
+      <div className="expense-statistics__controls">
+        <div className="expense-statistics__period" role="tablist" aria-label="통계 기간">
+          <button
+            className={period === 'monthly' ? 'is-active' : ''}
+            type="button"
+            role="tab"
+            aria-selected={period === 'monthly'}
+            onClick={() => changePeriod('monthly')}
+          >
+            <CalendarRange size={17} /> 월별
+          </button>
+          <button
+            className={period === 'daily' ? 'is-active' : ''}
+            type="button"
+            role="tab"
+            aria-selected={period === 'daily'}
+            onClick={() => changePeriod('daily')}
+          >
+            <CalendarDays size={17} /> 일별
+          </button>
+        </div>
+
+        <div className="expense-statistics__navigator">
+          <button
+            type="button"
+            onClick={() => move(-1)}
+            aria-label={period === 'daily' ? '이전 날' : '이전 달'}
+          >
+            <ChevronLeft size={19} />
+          </button>
+          <strong>{periodLabel(visibleDate, period)}</strong>
+          <button
+            type="button"
+            disabled={!canMoveNext}
+            onClick={() => move(1)}
+            aria-label={period === 'daily' ? '다음 날' : '다음 달'}
+          >
+            <ChevronRight size={19} />
+          </button>
+        </div>
+
+        <button
+          className="button button--secondary expense-statistics__list-button"
+          type="button"
+          onClick={() => setListOpen(true)}
+        >
+          <ReceiptText size={17} /> 지출 목록 {currentExpenses.length}건
         </button>
       </div>
 
-      <section className="expense-statistics__overview">
-        <article className="ui-card expense-statistics-total">
-          <div className="expense-statistics-total__icon">
-            <WalletCards size={21} />
+      <section className="ui-card expense-statistics-summary" aria-labelledby="expense-total-title">
+        <div className="expense-statistics-summary__top">
+          <span className="expense-statistics-summary__icon">
+            <WalletCards size={22} />
+          </span>
+          <div>
+            <span>
+              {period === 'daily'
+                ? `${visibleDate.getMonth() + 1}월 ${visibleDate.getDate()}일 총 지출`
+                : `${visibleDate.getMonth() + 1}월 총 지출`}
+            </span>
+            <h2 id="expense-total-title">{formatWon(total)}</h2>
+            <p className={`expense-statistics-summary__comparison is-${comparison.tone}`}>
+              {comparison.tone === 'up' ? (
+                <ArrowUp size={15} />
+              ) : comparison.tone === 'down' ? (
+                <ArrowDown size={15} />
+              ) : (
+                <Info size={15} />
+              )}
+              {comparison.text}
+            </p>
           </div>
-          <span>총 지출 금액</span>
-          <strong>486,900원</strong>
-          <p>
-            <TrendingDown size={14} />
-            지난달 대비 <b>12.5% 절약</b>
-          </p>
-        </article>
+        </div>
 
-        <article className="ui-card expense-statistics-line">
-          <div className="ui-card__header">
+        <div className="expense-trend">
+          <div className="expense-trend__header">
             <div>
-              <span>누적 지출</span>
-              <h2>이번 달 소비 흐름</h2>
+              <span>Spending trend</span>
+              <h3>{period === 'daily' ? '최근 7일 지출 흐름' : '최근 7개월 지출 흐름'}</h3>
             </div>
-            <span className="status-badge">목표 안쪽</span>
+            <small>오늘 기준</small>
           </div>
-          <div className="expense-statistics-line__chart">
-            <div className="expense-statistics-line__grid" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-              <span />
-            </div>
-            <svg
-              viewBox="0 0 700 180"
-              role="img"
-              aria-label="5월 누적 지출이 완만하게 증가한 선 그래프"
-            >
-              <defs>
-                <linearGradient id="spendingFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--color-primary-500)" stopOpacity="0.24" />
-                  <stop offset="100%" stopColor="var(--color-primary-500)" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path
-                d="M0,159 L85,142 L175,123 L260,109 L350,102 L435,78 L520,82 L610,48 L700,15 L700,180 L0,180 Z"
-                fill="url(#spendingFill)"
-              />
-              <polyline
-                points="0,159 85,142 175,123 260,109 350,102 435,78 520,82 610,48 700,15"
-                fill="none"
-                stroke="var(--color-primary-600)"
-                strokeWidth="4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              {[0, 85, 175, 260, 350, 435, 520, 610, 700].map((x, index) => {
-                const y = [159, 142, 123, 109, 102, 78, 82, 48, 15][index];
-                return (
-                  <circle
-                    key={x}
-                    cx={x}
-                    cy={y}
-                    r="5"
-                    fill="#ffffff"
-                    stroke="var(--color-primary-600)"
-                    strokeWidth="3"
-                  />
-                );
-              })}
-            </svg>
-            <div className="expense-statistics-line__axis">
-              <span>5/1</span>
-              <span>5/8</span>
-              <span>5/15</span>
-              <span>5/22</span>
-              <span>5/29</span>
-            </div>
-          </div>
-        </article>
-      </section>
-
-      <section className="expense-statistics__details">
-        <article className="ui-card expense-statistics-category">
-          <div className="ui-card__header">
-            <div>
-              <span>분류별 분석</span>
-              <h2>카테고리 비율</h2>
-            </div>
-          </div>
-          <div className="expense-statistics-category__body">
-            <div className="expense-statistics-category__donut">
-              <div>
-                <span>가장 큰 지출</span>
-                <strong>식비 48%</strong>
-              </div>
-            </div>
-            <div className="expense-statistics-category__legend">
-              {categoryBreakdown.map((category) => (
-                <div key={category.label}>
-                  <span
-                    className="expense-statistics-category__dot"
-                    style={{ background: category.color }}
-                  />
-                  <span>{category.label}</span>
-                  <strong>{category.amount}</strong>
-                  <small>{category.percent}%</small>
-                </div>
-              ))}
-            </div>
-          </div>
-        </article>
-
-        <article className="ui-card expense-statistics-daily">
-          <div className="ui-card__header">
-            <div>
-              <span>날짜별 비교</span>
-              <h2>일별 지출 비교</h2>
-            </div>
-            <div className="expense-statistics-daily__legend">
-              <span>
-                <i className="expense-statistics-daily__current" /> 이번 달
-              </span>
-              <span>
-                <i className="expense-statistics-daily__previous" /> 지난 달
-              </span>
-            </div>
-          </div>
-          <div className="expense-statistics-daily__chart">
-            {dailySpending.map((item) => (
-              <div className="expense-statistics-daily__group" key={item.day}>
+          <div
+            className="expense-trend__chart"
+            role="img"
+            aria-label={trend.map((item) => `${item.label} ${formatWon(item.amount)}`).join(', ')}
+          >
+            {trend.map((item) => (
+              <div
+                className="expense-trend__item"
+                key={item.label}
+                title={`${item.label} ${formatWon(item.amount)}`}
+              >
+                <span>{item.amount > 0 ? compactWon(item.amount) : ''}</span>
                 <div>
-                  <span
-                    className="expense-statistics-daily__bar expense-statistics-daily__bar--current"
-                    style={{ height: `${item.current}%` }}
-                  />
-                  <span
-                    className="expense-statistics-daily__bar expense-statistics-daily__bar--previous"
-                    style={{ height: `${item.previous}%` }}
+                  <i
+                    style={{
+                      height: `${Math.max(item.amount > 0 ? 7 : 0, (item.amount / trendMax) * 100)}%`,
+                    }}
                   />
                 </div>
-                <small>{item.day}</small>
+                <small>{item.label}</small>
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="expense-statistics__details">
+        <article className="ui-card expense-category-stats">
+          <div className="expense-statistics-section-heading">
+            <div>
+              <span>By category</span>
+              <h2>카테고리별 지출</h2>
+            </div>
+            <strong>{currentExpenses.length}건</strong>
+          </div>
+          <div className="expense-category-stats__list">
+            {categoryStats.map((item) => {
+              const meta = categories[item.categoryId];
+              const Icon = meta.icon;
+              return (
+                <div className="expense-category-row" key={item.categoryId}>
+                  <span className={`expense-category-icon expense-category-icon--${meta.tone}`}>
+                    <Icon size={18} />
+                  </span>
+                  <div>
+                    <div>
+                      <strong>{item.label}</strong>
+                      <span>{formatWon(item.amount)}</span>
+                    </div>
+                    <div className={`expense-category-row__progress is-${meta.tone}`}>
+                      <span style={{ width: `${item.ratio * 100}%` }} />
+                    </div>
+                  </div>
+                  <strong>{Math.round(item.ratio * 100)}%</strong>
+                </div>
+              );
+            })}
+          </div>
+        </article>
+
+        <article className="ui-card expense-period-compare">
+          <div className="expense-statistics-section-heading">
+            <div>
+              <span>Period compare</span>
+              <h2>{period === 'daily' ? '전날과 비교' : '지난달과 비교'}</h2>
+            </div>
+            <div className="expense-period-compare__legend">
+              <span>
+                <i className="is-previous" /> 이전
+              </span>
+              <span>
+                <i className="is-current" /> 선택
+              </span>
+            </div>
+          </div>
+          {hasComparisonData ? (
+            <div
+              className="expense-period-compare__chart"
+              role="img"
+              aria-label="카테고리별 이전 기간과 선택 기간 지출 비교"
+            >
+              {comparisons.map((item) => (
+                <div className="expense-period-compare__row" key={item.categoryId}>
+                  <strong>{item.label}</strong>
+                  <div>
+                    <span
+                      className="is-previous"
+                      style={{ width: `${(item.previous / compareMax) * 100}%` }}
+                    />
+                    <span
+                      className="is-current"
+                      style={{ width: `${(item.current / compareMax) * 100}%` }}
+                    />
+                  </div>
+                  <small>{formatWon(item.current)}</small>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="expense-period-compare__empty">
+              <ReceiptText size={24} />
+              <p>비교할 지출 내역이 없어요.</p>
+            </div>
+          )}
         </article>
       </section>
 
-      <article className="expense-statistics__insight">
+      <article className={`expense-statistics-insight is-${comparison.tone}`}>
         <span>
-          <Lightbulb size={19} />
+          {comparison.tone === 'down' ? (
+            <ArrowDown size={19} />
+          ) : comparison.tone === 'up' ? (
+            <ArrowUp size={19} />
+          ) : (
+            <Info size={19} />
+          )}
         </span>
         <div>
-          <strong>이번 달 소비 인사이트</strong>
-          <p>지난달보다 카페 지출은 8,500원 줄었고, 교통비는 4,200원 늘었어요.</p>
+          <strong>{period === 'daily' ? '오늘의 소비 인사이트' : '이번 달 소비 인사이트'}</strong>
+          <p>
+            {comparison.text}{' '}
+            {total > 0
+              ? `가장 큰 지출은 ${categoryStats.slice().sort((left, right) => right.amount - left.amount)[0]?.label ?? '기타'}예요.`
+              : '지출을 기록하면 소비 흐름을 분석해 드릴게요.'}
+          </p>
         </div>
-        <span className="expense-statistics__insight-rate">
-          <ArrowDownRight size={15} />
-          12.5%
-        </span>
+        {comparison.ratio !== null && <strong>{comparison.ratio.toFixed(1)}%</strong>}
       </article>
+
+      {listOpen && (
+        <ExpenseListDialog
+          title={
+            period === 'daily'
+              ? `${visibleDate.getMonth() + 1}월 ${visibleDate.getDate()}일 지출 목록`
+              : `${visibleDate.getFullYear()}년 ${visibleDate.getMonth() + 1}월 지출 목록`
+          }
+          expenses={currentExpenses}
+          onClose={() => setListOpen(false)}
+          onDelete={removeExpense}
+        />
+      )}
     </div>
   );
 }
