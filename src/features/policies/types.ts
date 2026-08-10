@@ -85,6 +85,29 @@ export interface PolicySearchResponse {
   nextPage: number | null;
 }
 
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  hasNext: boolean;
+}
+
+export interface HiddenPolicyRequest {
+  title: string;
+  category: string | null;
+  shortSummary: string | null;
+}
+
+export interface HiddenPolicySummary {
+  policyId: string;
+  title: string;
+  category: string | null;
+  shortSummary: string | null;
+  hiddenAt: string;
+}
+
 export interface PolicyDetail {
   policyId: string;
   category: string;
@@ -110,4 +133,15 @@ export interface PolicyDetail {
 
 export interface PolicyDetailNavigationState {
   summary: PolicySummary;
+}
+
+export interface PolicyHiddenNotice {
+  policyId: string;
+  title: string;
+  hiddenAt: string;
+  summary?: PolicySummary;
+}
+
+export interface PolicyListNavigationState {
+  hiddenPolicy?: PolicyHiddenNotice;
 }
