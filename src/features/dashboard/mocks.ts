@@ -1,22 +1,32 @@
-export const recentExpenses = [
-  { name: '스타벅스', category: '카페', amount: '5,000원', date: '05.12', tone: 'green' },
-  { name: '교통비', category: '교통', amount: '1,450원', date: '05.12', tone: 'blue' },
-  { name: '편의점', category: '식비', amount: '4,800원', date: '05.11', tone: 'orange' },
-  { name: '저녁 식사', category: '식비', amount: '12,000원', date: '05.11', tone: 'red' },
-  { name: '넷플릭스', category: '문화', amount: '5,500원', date: '05.10', tone: 'black' },
-];
+export const budgetPresets = [20_000, 30_000, 35_000, 50_000, 70_000];
 
-export const categorySpending = [
-  { label: '식비', amount: '234,000원', percent: 48, color: 'var(--color-primary-600)' },
-  { label: '교통', amount: '72,000원', percent: 15, color: 'var(--color-info)' },
-  { label: '카페', amount: '58,900원', percent: 12, color: 'var(--color-warning)' },
-  { label: '쇼핑', amount: '48,600원', percent: 10, color: 'var(--color-danger)' },
-  { label: '기타', amount: '73,400원', percent: 15, color: 'var(--color-purple)' },
-];
-
-export const quickActions = [
-  { label: '지출 등록', description: '직접 입력하기', to: '/expenses/new' },
-  { label: '이번 달 통계', description: '소비 흐름 보기', to: '/expenses/statistics' },
-  { label: '정책 찾기', description: '맞춤 혜택 보기', to: '/policies' },
-  { label: '절약 장소', description: '주변 혜택 보기', to: '/map' },
+export const homeNews = [
+  {
+    id: 'news-1',
+    category: '생활경제',
+    title: '소비자물가 상승세 속에서 생활비를 지키는 작은 습관',
+    source: '생존뉴스',
+    timeAgo: '2시간 전',
+  },
+  {
+    id: 'news-2',
+    category: '금융',
+    title: '금리 변동기에 확인해야 할 통장과 대출 관리 방법',
+    source: '금융저널',
+    timeAgo: '4시간 전',
+  },
+  {
+    id: 'news-3',
+    category: '절약',
+    title: '주 3회 도시락을 챙기면 한 달 식비는 얼마나 줄어들까',
+    source: '살림리포트',
+    timeAgo: '6시간 전',
+  },
+  {
+    id: 'news-4',
+    category: '트렌드',
+    title: '똑똑한 절약부터 맞춤 정책까지, 생활 금융 서비스의 변화',
+    source: '테크이코노미',
+    timeAgo: '8시간 전',
+  },
 ];
