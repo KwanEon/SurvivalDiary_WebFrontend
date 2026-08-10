@@ -58,7 +58,7 @@ export interface PolicyRecommendationRequest {
 export interface PolicySummary {
   policyId: string;
   category: string;
-  categoryType: PolicyCategory;
+  categoryType: PolicyCategory | null;
   title: string;
   summary: string;
   shortSummary: string;

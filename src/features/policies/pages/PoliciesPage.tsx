@@ -396,12 +396,16 @@ function PoliciesPage() {
           ) : (
             <section className="policies__list" aria-label="추천 정책 목록">
               {items.map((policy) => {
-                const visual = CATEGORY_VISUALS[policy.categoryType];
-                const Icon = visual.icon;
+                const visual = policy.categoryType
+                  ? CATEGORY_VISUALS[policy.categoryType]
+                  : undefined;
+                const Icon = visual?.icon ?? Landmark;
+                const visualTone = visual?.tone ?? 'mint';
+                const categoryName = visual?.label ?? (policy.category.trim() || '기타');
                 const reason = policy.recommendationReasons[0] ?? policy.eligibilityReasons[0];
                 return (
                   <article className="ui-card policy-card" key={policy.policyId}>
-                    <span className={`policy-card__icon policy-card__icon--${visual.tone}`}>
+                    <span className={`policy-card__icon policy-card__icon--${visualTone}`}>
                       <Icon size={22} />
                     </span>
 
@@ -414,7 +418,7 @@ function PoliciesPage() {
                               ? '둘러보기'
                               : '확인 필요'}
                         </span>
-                        <span className="policy-card__category">{visual.label}</span>
+                        <span className="policy-card__category">{categoryName}</span>
                       </div>
                       <h2>{policy.title}</h2>
                       <p>{policy.shortSummary || policy.summary}</p>
