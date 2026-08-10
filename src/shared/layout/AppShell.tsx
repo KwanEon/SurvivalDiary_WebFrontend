@@ -18,6 +18,7 @@ import {
 import { type ReactNode, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import './app-shell.css';
+import { useAuth } from '../../features/auth/AuthContext';
 
 const primaryNavigation = [
   { label: '홈', to: '/', icon: Home, end: true },
@@ -40,6 +41,7 @@ interface AppShellProps {
 function AppShell({ children }: AppShellProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [location] = useLocation();
+  const { user, logout } = useAuth();
 
   const closeMenu = () => setIsMenuOpen(false);
 
@@ -134,11 +136,17 @@ function AppShell({ children }: AppShellProps) {
               <Bell size={18} />
               <span />
             </button>
-            <button className="topbar__profile" type="button">
-              <span className="topbar__avatar">생</span>
+            <button className="topbar__profile" type="button" onClick={() => void logout()} aria-label="로그아웃">
+              <span className="topbar__avatar">
+                {user?.profileImageUrl ? (
+                  <img src={user.profileImageUrl} alt="" />
+                ) : (
+                  (user?.nickname ?? user?.name ?? '생').slice(0, 1)
+                )}
+              </span>
               <span className="topbar__profile-copy">
-                <strong>생존러</strong>
-                <small>절약 새싹</small>
+                <strong>{user?.nickname ?? user?.name}</strong>
+                <small>로그아웃</small>
               </span>
               <ChevronDown size={15} />
             </button>
