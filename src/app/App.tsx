@@ -1,6 +1,8 @@
 import { lazy, Suspense } from 'react';
-import { Route, Switch } from 'wouter';
+import { Redirect, Route, Switch, useLocation } from 'wouter';
 import AppShell from '../shared/layout/AppShell';
+import { AuthProvider, useAuth } from '../features/auth/AuthContext';
+import { LoginPage, SignupPage, SocialCallbackPage } from '../features/auth';
 
 const DashboardPage = lazy(() => import('../features/dashboard'));
 const ExpenseEntryPage = lazy(() => import('../features/expense-entry'));
@@ -9,7 +11,13 @@ const PoliciesPage = lazy(() => import('../features/policies'));
 const SavingsMapPage = lazy(() => import('../features/savings-map'));
 const CommunityPage = lazy(() => import('../features/community'));
 
-function App() {
+function ProtectedApp() {
+  const { user, isLoading } = useAuth();
+  const [location] = useLocation();
+
+  if (isLoading) return <div className="page-loading">로그인 상태를 확인하고 있어요.</div>;
+  if (!user) return <Redirect to={`/login?returnTo=${encodeURIComponent(location)}`} />;
+
   return (
     <AppShell>
       <Suspense fallback={<div className="page-loading">화면을 준비하고 있어요.</div>}>
@@ -25,6 +33,22 @@ function App() {
       </Suspense>
     </AppShell>
   );
+}
+
+function AppRoutes() {
+  return (
+    <Switch>
+      <Route path="/login" component={LoginPage} />
+      <Route path="/signup" component={SignupPage} />
+      <Route path="/auth/callback/kakao"><SocialCallbackPage provider="kakao" /></Route>
+      <Route path="/auth/callback/naver"><SocialCallbackPage provider="naver" /></Route>
+      <Route><ProtectedApp /></Route>
+    </Switch>
+  );
+}
+
+function App() {
+  return <AuthProvider><AppRoutes /></AuthProvider>;
 }
 
 export default App;
