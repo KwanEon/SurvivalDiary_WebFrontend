@@ -21,6 +21,8 @@ export type PolicyRecommendationStatus = 'RECOMMENDED' | 'CHECK_REQUIRED' | 'DIS
 export type PolicyApplicationPeriodType =
   'FIXED' | 'ALWAYS' | 'CLOSED' | 'UNTIL_BUDGET' | 'UNKNOWN';
 export type PolicySupportAmountType = 'FIXED' | 'MAXIMUM' | 'MONTHLY' | 'MONTHLY_MAXIMUM';
+export type PolicyOfficialLinkType =
+  'APPLICATION_CANDIDATE' | 'LOGIN_REQUIRED' | 'INSTITUTION_HOME' | 'UNKNOWN' | 'UNAVAILABLE';
 
 export interface PolicyPreference {
   saved: boolean;
@@ -81,4 +83,31 @@ export interface PolicySearchResponse {
   partialResult: boolean;
   checkedProviderPages: number;
   nextPage: number | null;
+}
+
+export interface PolicyDetail {
+  policyId: string;
+  category: string;
+  categoryType: PolicyCategory | null;
+  title: string;
+  description: string;
+  supportAmount: number | null;
+  supportAmountType: PolicySupportAmountType | null;
+  supportText: string;
+  applicationPeriodText: string | null;
+  applicationPeriodType: PolicyApplicationPeriodType | null;
+  applicationStartDate: string | null;
+  applicationEndDate: string | null;
+  target: string;
+  agency: string;
+  operatingAgency: string;
+  applicationMethod: string;
+  documents: string[];
+  officialUrl: string | null;
+  officialLinkType: PolicyOfficialLinkType;
+  referenceUrls: string[];
+}
+
+export interface PolicyDetailNavigationState {
+  summary: PolicySummary;
 }

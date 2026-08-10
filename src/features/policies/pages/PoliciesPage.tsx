@@ -1,6 +1,7 @@
 import {
   BriefcaseBusiness,
   Building2,
+  ChevronRight,
   CircleDollarSign,
   GraduationCap,
   Landmark,
@@ -25,6 +26,7 @@ import {
 import type {
   PolicyApplicationPeriodType,
   PolicyCategory,
+  PolicyDetailNavigationState,
   PolicyPreference,
   PolicySummary,
   PolicySupportAmountType,
@@ -442,7 +444,18 @@ function PoliciesPage() {
                           policy.applicationPeriodText,
                         )}
                       </strong>
-                      <small>상세 정보는 다음 단계에서 연결됩니다.</small>
+                      <button
+                        className="policy-card__detail"
+                        type="button"
+                        onClick={() =>
+                          navigate(`/policies/${encodeURIComponent(policy.policyId)}`, {
+                            state: { summary: policy } satisfies PolicyDetailNavigationState,
+                          })
+                        }
+                        aria-label={`${policy.title} 상세 보기`}
+                      >
+                        상세 보기 <ChevronRight size={15} />
+                      </button>
                     </div>
                   </article>
                 );
