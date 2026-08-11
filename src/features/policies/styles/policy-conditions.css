@@ -124,6 +124,26 @@
   background: var(--color-surface);
 }
 
+.policy-field select {
+  appearance: none;
+  padding-right: 3rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235d6a79' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1rem;
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    background-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.policy-field select:not(:disabled):hover {
+  border-color: var(--color-primary-300);
+  background-color: var(--color-primary-50);
+  box-shadow: var(--shadow-sm);
+}
+
 .policy-field input:focus,
 .policy-field select:focus {
   border-color: var(--color-primary-600);
@@ -133,7 +153,7 @@
 .policy-field input:disabled,
 .policy-field select:disabled {
   color: var(--color-ink-400);
-  background: var(--color-surface-soft);
+  background-color: var(--color-surface-soft);
   cursor: not-allowed;
 }
 
@@ -260,5 +280,11 @@
 
   .policy-conditions-actions .button {
     width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .policy-field select {
+    transition: none;
   }
 }
