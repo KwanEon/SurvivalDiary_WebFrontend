@@ -5,6 +5,8 @@ import {
   Building2,
   Bus,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Coffee,
   Coins,
   CreditCard,
@@ -35,6 +37,7 @@ import '../styles/dashboard.css';
 
 const wonFormatter = new Intl.NumberFormat('ko-KR');
 const DAY_IN_MS = 86_400_000;
+const POLICIES_PER_PAGE = 3;
 
 const categoryMeta: Record<
   number,
@@ -101,11 +104,11 @@ function supportLabel(policy: PolicySummary) {
   }
 }
 
-function selectPreviewPolicies(items: PolicySummary[]) {
+function orderPreviewPolicies(items: PolicySummary[]) {
   const selected: PolicySummary[] = [];
   const ids = new Set<string>();
   const add = (policy: PolicySummary) => {
-    if (selected.length < 3 && !ids.has(policy.policyId)) {
+    if (!ids.has(policy.policyId)) {
       ids.add(policy.policyId);
       selected.push(policy);
     }
@@ -370,6 +373,7 @@ function DashboardPage() {
   );
   const [policyError, setPolicyError] = useState('');
   const [policyReloadKey, setPolicyReloadKey] = useState(0);
+  const [policyPageIndex, setPolicyPageIndex] = useState(0);
 
   const loadDashboard = useCallback(async (signal?: AbortSignal, background = false) => {
     if (background) setRefreshing(true);
@@ -412,13 +416,14 @@ function DashboardPage() {
           return;
         }
         const response = await getPolicyRecommendations(
-          { category: null, keyword: null, page: 0, size: 20 },
+          { category: null, keyword: null, page: 1, size: 20 },
           controller.signal,
         );
         if (controller.signal.aborted) return;
-        const preview = selectPreviewPolicies(response.items);
-        setPolicies(preview);
-        setPolicyState(preview.length ? 'ready' : 'empty');
+        const orderedPolicies = orderPreviewPolicies(response.items);
+        setPolicies(orderedPolicies);
+        setPolicyPageIndex(0);
+        setPolicyState(orderedPolicies.length ? 'ready' : 'empty');
       } catch (error) {
         if (controller.signal.aborted) return;
         setPolicyError(errorMessage(error, '맞춤 정책을 불러오지 못했어요.'));
@@ -440,6 +445,18 @@ function DashboardPage() {
   const isNearLimit = dailyUsagePercent >= 60 && dailyUsagePercent < 100;
   const isOverLimit = Boolean(summary?.dailyLimit && dailyUsagePercent >= 100);
   const TopCategoryIcon = topCategory?.icon ?? CreditCard;
+  const policyPages = useMemo(
+    () =>
+      Array.from(
+        { length: Math.ceil(policies.length / POLICIES_PER_PAGE) },
+        (_, index) =>
+          policies.slice(
+            index * POLICIES_PER_PAGE,
+            (index + 1) * POLICIES_PER_PAGE,
+          ),
+      ),
+    [policies],
+  );
 
   const summaryTiles = useMemo(
     () => [
@@ -631,9 +648,36 @@ function DashboardPage() {
             <h2 id="dashboard-policy-title">놓치면 아쉬운 정책</h2>
             <p>저장한 조건과 신청 마감일을 함께 살폈어요.</p>
           </div>
-          <Link href="/policies">
-            전체 보기 <ArrowRight size={15} />
-          </Link>
+          <div className="dashboard-section-heading__actions">
+            {policyState === 'ready' && policyPages.length > 1 && (
+              <div className="dashboard-policy__pagination" aria-label="홈 정책 페이지 이동">
+                <button
+                  type="button"
+                  aria-label="이전 정책 페이지"
+                  disabled={policyPageIndex === 0}
+                  onClick={() => setPolicyPageIndex((index) => Math.max(0, index - 1))}
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <span aria-live="polite">
+                  {policyPageIndex + 1} / {policyPages.length}
+                </span>
+                <button
+                  type="button"
+                  aria-label="다음 정책 페이지"
+                  disabled={policyPageIndex === policyPages.length - 1}
+                  onClick={() =>
+                    setPolicyPageIndex((index) => Math.min(policyPages.length - 1, index + 1))
+                  }
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            )}
+            <Link href="/policies">
+              전체 보기 <ArrowRight size={15} />
+            </Link>
+          </div>
         </div>
 
         {policyState === 'loading' && (
@@ -678,39 +722,56 @@ function DashboardPage() {
           </Link>
         )}
         {policyState === 'ready' && (
-          <div className="dashboard-policy__grid">
-            {policies.map((policy, index) => {
-              const deadline = deadlineLabel(policy.applicationEndDate);
-              const reason =
-                policy.recommendationReasons[0] || policy.shortSummary || policy.summary;
-              return (
-                <Link
-                  className={`ui-card dashboard-policy-card ${index === 0 ? 'dashboard-policy-card--featured' : ''}`}
-                  href={`/policies?keyword=${encodeURIComponent(policy.title)}`}
-                  key={policy.policyId}
+          <div className="dashboard-policy__viewport">
+            <div
+              className="dashboard-policy__track"
+              style={{ transform: `translateX(-${policyPageIndex * 100}%)` }}
+            >
+              {policyPages.map((page, pageIndex) => (
+                <div
+                  className="dashboard-policy__grid"
+                  aria-hidden={pageIndex !== policyPageIndex}
+                  key={page[0]?.policyId ?? pageIndex}
                 >
-                  <div className="dashboard-policy-card__tags">
-                    {policy.recommendationStatus === 'RECOMMENDED' && <span>맞춤 추천</span>}
-                    {deadline && <span className="is-deadline">{deadline}</span>}
-                    <span className="is-category">{policy.category}</span>
-                  </div>
-                  <h3>{policy.title}</h3>
-                  <p>{reason}</p>
-                  <div className="dashboard-policy-card__support">
-                    <Coins size={16} />
-                    <strong>{supportLabel(policy)}</strong>
-                  </div>
-                  <div className="dashboard-policy-card__footer">
-                    <span>
-                      <Building2 size={14} /> {policy.agency}
-                    </span>
-                    <strong>
-                      자세히 <ArrowRight size={14} />
-                    </strong>
-                  </div>
-                </Link>
-              );
-            })}
+                  {page.map((policy, index) => {
+                    const policyIndex = pageIndex * POLICIES_PER_PAGE + index;
+                    const deadline = deadlineLabel(policy.applicationEndDate);
+                    const reason =
+                      policy.recommendationReasons[0] || policy.shortSummary || policy.summary;
+                    return (
+                      <Link
+                        className={`ui-card dashboard-policy-card ${policyIndex === 0 ? 'dashboard-policy-card--featured' : ''}`}
+                        href={`/policies?keyword=${encodeURIComponent(policy.title)}`}
+                        key={policy.policyId}
+                        tabIndex={pageIndex === policyPageIndex ? undefined : -1}
+                      >
+                        <div className="dashboard-policy-card__tags">
+                          {policy.recommendationStatus === 'RECOMMENDED' && (
+                            <span>맞춤 추천</span>
+                          )}
+                          {deadline && <span className="is-deadline">{deadline}</span>}
+                          <span className="is-category">{policy.category}</span>
+                        </div>
+                        <h3>{policy.title}</h3>
+                        <p>{reason}</p>
+                        <div className="dashboard-policy-card__support">
+                          <Coins size={16} />
+                          <strong>{supportLabel(policy)}</strong>
+                        </div>
+                        <div className="dashboard-policy-card__footer">
+                          <span>
+                            <Building2 size={14} /> {policy.agency}
+                          </span>
+                          <strong>
+                            자세히 <ArrowRight size={14} />
+                          </strong>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </section>

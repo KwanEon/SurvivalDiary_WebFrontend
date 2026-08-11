@@ -387,7 +387,8 @@
   font-size: 0.75rem;
 }
 
-.dashboard-section-heading > a {
+.dashboard-section-heading > a,
+.dashboard-section-heading__actions > a {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
@@ -396,8 +397,72 @@
   font-weight: 800;
 }
 
+.dashboard-section-heading__actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.dashboard-policy__pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dashboard-policy__pagination button {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-pill);
+  color: var(--color-primary-800);
+  background: var(--color-surface);
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    background var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.dashboard-policy__pagination button:hover:not(:disabled) {
+  border-color: var(--color-primary-400);
+  background: var(--color-primary-50);
+  transform: translateY(-1px);
+}
+
+.dashboard-policy__pagination button:disabled {
+  color: var(--color-ink-300);
+  background: var(--color-canvas);
+  cursor: default;
+}
+
+.dashboard-policy__pagination > span {
+  min-width: 2.8rem;
+  color: var(--color-ink-500);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.dashboard-policy__viewport {
+  overflow: hidden;
+}
+
+.dashboard-policy__track {
+  display: flex;
+  align-items: stretch;
+  transition: transform 380ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
 .dashboard-policy__grid {
   display: grid;
+  min-width: 100%;
+  flex: 0 0 100%;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-4);
 }
@@ -1217,6 +1282,12 @@
     align-items: flex-start;
   }
 
+  .dashboard-section-heading__actions {
+    align-items: flex-end;
+    flex-direction: column-reverse;
+    gap: var(--space-2);
+  }
+
   .dashboard-tip-card {
     align-items: flex-start;
     flex-direction: column;
@@ -1286,6 +1357,8 @@
   }
 
   .dashboard-policy-card,
+  .dashboard-policy__track,
+  .dashboard-policy__pagination button,
   .dashboard-budget__progress span {
     transition: none;
   }
