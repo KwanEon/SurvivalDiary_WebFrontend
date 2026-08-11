@@ -93,7 +93,9 @@ function deadlineLabel(endDate: string | null) {
 }
 
 function supportLabel(policy: PolicySummary) {
-  if (policy.supportAmount === null) return policy.supportText || '지원 내용 확인';
+  if (policy.supportAmount === null) {
+    return policy.shortSummary.trim() || '지원 내용은 상세 화면에서 확인해 주세요.';
+  }
   const amount = formatWon(policy.supportAmount);
   switch (policy.supportAmountType) {
     case 'MAXIMUM':
@@ -740,7 +742,9 @@ function DashboardPage() {
                     const policyIndex = pageIndex * POLICIES_PER_PAGE + index;
                     const deadline = deadlineLabel(policy.applicationEndDate);
                     const reason =
-                      policy.recommendationReasons[0] || policy.shortSummary || policy.summary;
+                      policy.recommendationReasons[0] ||
+                      policy.eligibilityReasons[0] ||
+                      '지원 대상과 신청 조건을 상세 화면에서 확인해 보세요.';
                     return (
                       <Link
                         className={`ui-card dashboard-policy-card ${policyIndex === 0 ? 'dashboard-policy-card--featured' : ''}`}
@@ -759,8 +763,13 @@ function DashboardPage() {
                         <h3>{policy.title}</h3>
                         <p>{reason}</p>
                         <div className="dashboard-policy-card__support">
-                          <Coins size={16} />
-                          <strong>{supportLabel(policy)}</strong>
+                          <span className="dashboard-policy-card__support-icon" aria-hidden="true">
+                            <Coins size={15} />
+                          </span>
+                          <div>
+                            <small>지원 요약</small>
+                            <strong>{supportLabel(policy)}</strong>
+                          </div>
                         </div>
                         <div className="dashboard-policy-card__footer">
                           <span>
