@@ -247,7 +247,9 @@
   color: var(--color-ink-600);
   background: var(--color-surface);
   cursor: pointer;
-  font: inherit;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 800;
   text-align: left;
 }
 
@@ -260,7 +262,6 @@
 .policies__sort-option.is-selected {
   color: var(--color-primary-800);
   background: var(--color-primary-100);
-  font-weight: 800;
 }
 
 .policies__sort-option svg {
