@@ -2,7 +2,6 @@ import {
   AlertCircle,
   Bus,
   CalendarDays,
-  Check,
   CircleCheck,
   Coffee,
   CreditCard,
@@ -149,7 +148,7 @@ function ExpenseEntryPage() {
         <div>
           <p className="page-heading__eyebrow">Manual expense</p>
           <h1>지출 등록</h1>
-          <p>알림 감지 없이 직접 입력한 지출만 안전하게 기록해요.</p>
+          <p>나의 지출을 기록해요.</p>
         </div>
         <span className="expense-entry__today">
           <CalendarDays size={16} /> {readableDate(today)}
@@ -169,9 +168,6 @@ function ExpenseEntryPage() {
             <div>
               <h2>직접 지출 입력</h2>
             </div>
-            <span className="status-badge">
-              <Check size={13} /> 직접 입력
-            </span>
           </div>
 
           {successMessage && (
@@ -336,7 +332,6 @@ function ExpenseEntryPage() {
               </div>
             </dl>
           </article>
-
         </aside>
       </div>
     </div>

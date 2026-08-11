@@ -62,11 +62,6 @@
   font-size: 0.6875rem;
 }
 
-.expense-entry__form-header .status-badge {
-  gap: 0.25rem;
-  white-space: nowrap;
-}
-
 .expense-entry__form-icon {
   display: grid;
   width: 2.75rem;
@@ -458,10 +453,6 @@
   .expense-entry__form-header {
     align-items: flex-start;
     flex-wrap: wrap;
-  }
-
-  .expense-entry__form-header .status-badge {
-    margin-left: calc(2.75rem + var(--space-3));
   }
 
   .expense-entry__categories {
