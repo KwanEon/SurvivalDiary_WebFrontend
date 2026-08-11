@@ -1,4 +1,4 @@
-import { ArrowUpDown, History, Landmark, Search, Sparkles, UserRoundCheck } from 'lucide-react';
+import { History, Landmark, Search, Sparkles, UserRoundCheck } from 'lucide-react';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useHistoryState } from 'wouter/use-browser-location';
@@ -11,6 +11,7 @@ import {
 } from '../api';
 import PolicyActionToast from '../components/PolicyActionToast';
 import PolicyListSection from '../components/PolicyListSection';
+import PolicySortMenu, { type PolicySort } from '../components/PolicySortMenu';
 import PolicyStateView from '../components/PolicyStateView';
 import { isAbortError, policyErrorMessage } from '../errors';
 import {
@@ -32,14 +33,6 @@ import '../styles/policies.css';
 const CATEGORY_VALUES = new Set<PolicyCategory>(
   POLICY_CATEGORY_OPTIONS.map((option) => option.value),
 );
-
-type PolicySort = 'recommendation' | 'deadline' | 'support';
-
-const POLICY_SORT_OPTIONS: { value: PolicySort; label: string }[] = [
-  { value: 'recommendation', label: '추천순' },
-  { value: 'deadline', label: '마감 임박순' },
-  { value: 'support', label: '지원 금액순' },
-];
 
 function readFilters() {
   const params = new URLSearchParams(window.location.search);
@@ -478,20 +471,7 @@ function PoliciesPage() {
                 />
                 <button type="submit">검색</button>
               </form>
-              <label className="policies__sort-control">
-                <ArrowUpDown size={16} aria-hidden="true" />
-                <span className="sr-only">정책 정렬 기준</span>
-                <select
-                  value={sort}
-                  onChange={(event) => setSort(event.target.value as PolicySort)}
-                >
-                  {POLICY_SORT_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <PolicySortMenu value={sort} onChange={setSort} />
               {category || keyword ? (
                 <button
                   className="policies__reset"
