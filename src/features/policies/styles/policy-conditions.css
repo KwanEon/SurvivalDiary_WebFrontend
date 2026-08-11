@@ -130,7 +130,8 @@
   box-shadow: 0 0 0 3px rgb(26 183 146 / 12%);
 }
 
-.policy-field input:disabled {
+.policy-field input:disabled,
+.policy-field select:disabled {
   color: var(--color-ink-400);
   background: var(--color-surface-soft);
   cursor: not-allowed;
