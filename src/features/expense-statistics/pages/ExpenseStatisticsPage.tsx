@@ -381,6 +381,7 @@ function ExpenseStatisticsPage() {
   const trendMax = Math.max(...trend.map((item) => item.amount), 1);
   const compareMax = Math.max(...comparisons.flatMap((item) => [item.current, item.previous]), 1);
   const hasComparisonData = comparisons.some((item) => item.current > 0 || item.previous > 0);
+  const currentPeriodLabel = period === 'daily' ? '오늘' : '이번 달';
   const limit = period === 'daily' ? now : new Date(now.getFullYear(), now.getMonth(), 1);
   const canMoveNext = movePeriod(visibleDate, period, 1).getTime() <= limit.getTime();
 
@@ -611,7 +612,7 @@ function ExpenseStatisticsPage() {
                 <i className="is-previous" /> 이전
               </span>
               <span>
-                <i className="is-current" /> 선택
+                <i className="is-current" /> {currentPeriodLabel}
               </span>
             </div>
           </div>
@@ -619,12 +620,17 @@ function ExpenseStatisticsPage() {
             <div
               className="expense-period-compare__chart"
               role="img"
-              aria-label="카테고리별 이전 기간과 선택 기간 지출 비교"
+              aria-label={comparisons
+                .map(
+                  (item) =>
+                    `${item.label}, 이전 ${formatWon(item.previous)}, ${currentPeriodLabel} ${formatWon(item.current)}`,
+                )
+                .join(', ')}
             >
               {comparisons.map((item) => (
                 <div className="expense-period-compare__row" key={item.categoryId}>
                   <strong>{item.label}</strong>
-                  <div>
+                  <div className="expense-period-compare__bars">
                     <span
                       className="is-previous"
                       style={{ width: `${(item.previous / compareMax) * 100}%` }}
@@ -634,7 +640,14 @@ function ExpenseStatisticsPage() {
                       style={{ width: `${(item.current / compareMax) * 100}%` }}
                     />
                   </div>
-                  <small>{formatWon(item.current)}</small>
+                  <div className="expense-period-compare__amounts">
+                    <small>
+                      <i className="is-previous" /> 이전 {formatWon(item.previous)}
+                    </small>
+                    <small>
+                      <i className="is-current" /> {currentPeriodLabel} {formatWon(item.current)}
+                    </small>
+                  </div>
                 </div>
               ))}
             </div>

@@ -168,7 +168,6 @@ function ExpenseEntryPage() {
             </span>
             <div>
               <h2>직접 지출 입력</h2>
-              <p>필수 항목만 입력하면 App과 같은 방식으로 기록할 수 있어요.</p>
             </div>
             <span className="status-badge">
               <Check size={13} /> 직접 입력
@@ -338,15 +337,6 @@ function ExpenseEntryPage() {
             </dl>
           </article>
 
-          <article className="expense-entry-guide">
-            <span>
-              <Check size={18} />
-            </span>
-            <div>
-              <strong>직접 입력만 사용해요</strong>
-              <p>결제 알림 감지나 자동 등록 없이 입력한 내용만 저장돼요.</p>
-            </div>
-          </article>
         </aside>
       </div>
     </div>
