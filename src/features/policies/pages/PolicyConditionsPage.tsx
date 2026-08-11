@@ -6,6 +6,7 @@ import PolicyStateView from '../components/PolicyStateView';
 import { isAbortError, policyErrorMessage } from '../errors';
 import {
   EDUCATION_STATUS_OPTIONS,
+  getDistrictOptions,
   POLICY_INTEREST_OPTIONS,
   REGION_OPTIONS,
   WORK_STATUS_OPTIONS,
@@ -63,10 +64,11 @@ function validate(form: PreferenceFormState): FormErrors {
   if (!form.regionCode) {
     errors.regionCode = '거주 시·도를 선택해 주세요.';
   }
-  if (form.districtCode && !/^\d{5}$/.test(form.districtCode)) {
-    errors.districtCode = '시·군·구 코드는 숫자 5자리로 입력해 주세요.';
-  } else if (form.districtCode && !form.districtCode.startsWith(form.regionCode)) {
-    errors.districtCode = '선택한 시·도와 일치하는 시·군·구 코드를 입력해 주세요.';
+  if (
+    form.districtCode &&
+    !getDistrictOptions(form.regionCode).some((option) => option.value === form.districtCode)
+  ) {
+    errors.districtCode = '선택한 시·도에 속한 시·군·구를 선택해 주세요.';
   }
 
   return errors;
@@ -81,6 +83,7 @@ function PolicyConditionsPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const districtOptions = getDistrictOptions(form.regionCode);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -259,31 +262,36 @@ function PolicyConditionsPage() {
 
             <label className="policy-field policy-field--wide">
               <span>
-                시·군·구 법정동 코드 <small>선택</small>
+                거주 시·군·구 <small>선택</small>
               </span>
-              <input
-                type="text"
-                inputMode="numeric"
-                maxLength={5}
-                placeholder={
-                  form.regionCode ? '예: 서울 강남구 11680' : '시·도를 먼저 선택해 주세요'
-                }
+              <select
                 value={form.districtCode}
-                disabled={!form.regionCode}
-                onChange={(event) =>
-                  updateField('districtCode', event.target.value.replace(/\D/g, '').slice(0, 5))
-                }
+                disabled={!form.regionCode || districtOptions.length === 0}
+                onChange={(event) => updateField('districtCode', event.target.value)}
                 aria-invalid={Boolean(errors.districtCode)}
                 aria-describedby={
                   errors.districtCode ? 'policy-district-error' : 'policy-district-help'
                 }
-              />
+              >
+                <option value="">
+                  {form.regionCode ? '시·도 전체' : '시·도를 먼저 선택해 주세요'}
+                </option>
+                {districtOptions.map((option) => (
+                  <option value={option.value} key={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
               {errors.districtCode ? (
                 <small className="policy-field__error" id="policy-district-error">
                   {errors.districtCode}
                 </small>
               ) : (
-                <small id="policy-district-help">시·도 전체 정책을 보려면 비워두세요.</small>
+                <small id="policy-district-help">
+                  {form.regionCode && districtOptions.length === 0
+                    ? '시·군·구가 없는 지역으로 시·도 전체 조건이 적용됩니다.'
+                    : '시·도 전체 정책을 보려면 시·도 전체를 선택하세요.'}
+                </small>
               )}
             </label>
           </div>

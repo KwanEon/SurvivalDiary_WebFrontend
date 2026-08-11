@@ -1,29 +1,12 @@
 import type { EducationStatus, PolicyCategory, PolicyInterest, WorkStatus } from './types';
+import { REGION_OPTIONS } from './regions';
+
+export { getDistrictOptions, REGION_OPTIONS } from './regions';
 
 interface Option<T extends string> {
   value: T;
   label: string;
 }
-
-export const REGION_OPTIONS = [
-  { value: '11', label: '서울특별시' },
-  { value: '26', label: '부산광역시' },
-  { value: '27', label: '대구광역시' },
-  { value: '28', label: '인천광역시' },
-  { value: '29', label: '광주광역시' },
-  { value: '30', label: '대전광역시' },
-  { value: '31', label: '울산광역시' },
-  { value: '36', label: '세종특별자치시' },
-  { value: '41', label: '경기도' },
-  { value: '43', label: '충청북도' },
-  { value: '44', label: '충청남도' },
-  { value: '46', label: '전라남도' },
-  { value: '47', label: '경상북도' },
-  { value: '48', label: '경상남도' },
-  { value: '50', label: '제주특별자치도' },
-  { value: '51', label: '강원특별자치도' },
-  { value: '52', label: '전북특별자치도' },
-] as const;
 
 export const WORK_STATUS_OPTIONS: Option<WorkStatus>[] = [
   { value: 'EMPLOYED', label: '재직 중' },
