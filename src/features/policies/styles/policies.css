@@ -137,7 +137,7 @@
   white-space: nowrap;
 }
 
-.policies__sort-label,
+.policies__sort-control,
 .policies__reset {
   display: inline-flex;
   min-height: 2.5rem;
@@ -150,6 +150,33 @@
   font-size: 0.75rem;
   font-weight: 700;
   white-space: nowrap;
+}
+
+.policies__sort-control {
+  gap: var(--space-1);
+  padding-right: var(--space-2);
+}
+
+.policies__sort-control:focus-within {
+  border-color: var(--color-primary-600);
+  box-shadow: 0 0 0 3px rgb(26 183 146 / 12%);
+}
+
+.policies__sort-control svg {
+  color: var(--color-primary-700);
+  flex: 0 0 auto;
+}
+
+.policies__sort-control select {
+  min-height: 2rem;
+  padding: 0 var(--space-1);
+  border: 0;
+  outline: 0;
+  color: var(--color-ink-600);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
 }
 
 .policies__reset {
@@ -176,6 +203,41 @@
   font-size: 0.6875rem;
 }
 
+.policies__sections {
+  display: grid;
+  gap: var(--space-8);
+}
+
+.policies-section__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+  padding: 0 var(--space-1);
+}
+
+.policies-section__heading h2 {
+  font-size: 1.15rem;
+  letter-spacing: -0.03em;
+}
+
+.policies-section__heading p {
+  margin-top: var(--space-1);
+  color: var(--color-ink-500);
+  font-size: 0.75rem;
+}
+
+.policies-section__heading > span {
+  flex: 0 0 auto;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-pill);
+  color: var(--color-primary-800);
+  background: var(--color-primary-100);
+  font-size: 0.6875rem;
+  font-weight: 800;
+}
+
 .policies__list {
   display: grid;
   gap: var(--space-3);
@@ -197,6 +259,31 @@
   border-color: var(--color-primary-300);
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
+}
+
+.policy-card--featured {
+  grid-template-columns: 4.5rem minmax(0, 1fr) minmax(10rem, auto);
+  padding: var(--space-6);
+  border-color: var(--color-primary-300);
+  background:
+    radial-gradient(circle at 92% 16%, rgb(255 255 255 / 80%), transparent 14rem),
+    linear-gradient(125deg, var(--color-primary-50), var(--color-surface));
+  box-shadow: var(--shadow-card);
+}
+
+.policy-card--featured .policy-card__icon {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: var(--radius-xl);
+}
+
+.policy-card--featured .policy-card__body h2 {
+  font-size: 1.15rem;
+}
+
+.policy-card--featured .policy-card__body > p {
+  font-size: 0.8125rem;
+  line-height: 1.6;
 }
 
 .policy-card__icon {
@@ -446,7 +533,7 @@
     width: 100%;
   }
 
-  .policies__sort-label,
+  .policies__sort-control,
   .policies__reset {
     flex: 1 1 auto;
     justify-content: center;
@@ -456,6 +543,17 @@
     grid-template-columns: 3rem minmax(0, 1fr);
     align-items: start;
     gap: var(--space-3);
+  }
+
+  .policy-card--featured {
+    grid-template-columns: 3.5rem minmax(0, 1fr);
+    padding: var(--space-5);
+  }
+
+  .policy-card--featured .policy-card__icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: var(--radius-lg);
   }
 
   .policy-card__icon {
@@ -487,6 +585,14 @@
 }
 
 @media (max-width: 480px) {
+  .policies-section__heading {
+    align-items: flex-start;
+  }
+
+  .policies-section__heading > span {
+    margin-top: 0.1rem;
+  }
+
   .policies__result-meta {
     align-items: flex-start;
     flex-direction: column;

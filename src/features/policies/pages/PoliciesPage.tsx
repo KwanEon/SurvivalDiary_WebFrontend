@@ -1,18 +1,4 @@
-import {
-  BriefcaseBusiness,
-  Building2,
-  ChevronRight,
-  CircleDollarSign,
-  EyeOff,
-  GraduationCap,
-  History,
-  Landmark,
-  MapPin,
-  Search,
-  Sparkles,
-  UserRoundCheck,
-  UsersRound,
-} from 'lucide-react';
+import { ArrowUpDown, History, Landmark, Search, Sparkles, UserRoundCheck } from 'lucide-react';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useHistoryState } from 'wouter/use-browser-location';
@@ -24,6 +10,7 @@ import {
   restoreHiddenPolicy,
 } from '../api';
 import PolicyActionToast from '../components/PolicyActionToast';
+import PolicyListSection from '../components/PolicyListSection';
 import PolicyStateView from '../components/PolicyStateView';
 import { isAbortError, policyErrorMessage } from '../errors';
 import {
@@ -33,28 +20,26 @@ import {
   workStatusLabel,
 } from '../options';
 import type {
-  PolicyApplicationPeriodType,
   PolicyCategory,
   PolicyDetailNavigationState,
   PolicyHiddenNotice,
   PolicyListNavigationState,
   PolicyPreference,
   PolicySummary,
-  PolicySupportAmountType,
 } from '../types';
 import '../styles/policies.css';
-
-const CATEGORY_VISUALS = {
-  EMPLOYMENT: { icon: BriefcaseBusiness, tone: 'purple', label: '일자리' },
-  HOUSING: { icon: Building2, tone: 'coral', label: '주거' },
-  EDUCATION: { icon: GraduationCap, tone: 'blue', label: '교육' },
-  WELFARE_CULTURE: { icon: Landmark, tone: 'mint', label: '복지·문화' },
-  PARTICIPATION_RIGHTS: { icon: UsersRound, tone: 'yellow', label: '참여·권리' },
-} as const;
 
 const CATEGORY_VALUES = new Set<PolicyCategory>(
   POLICY_CATEGORY_OPTIONS.map((option) => option.value),
 );
+
+type PolicySort = 'recommendation' | 'deadline' | 'support';
+
+const POLICY_SORT_OPTIONS: { value: PolicySort; label: string }[] = [
+  { value: 'recommendation', label: '추천순' },
+  { value: 'deadline', label: '마감 임박순' },
+  { value: 'support', label: '지원 금액순' },
+];
 
 function readFilters() {
   const params = new URLSearchParams(window.location.search);
@@ -76,41 +61,6 @@ function writeFilters(category: PolicyCategory | null, keyword: string, replace 
   window.history[replace ? 'replaceState' : 'pushState'](null, '', nextUrl);
 }
 
-function formatSupportAmount(amount: number, type: PolicySupportAmountType | null) {
-  const formatted = `${new Intl.NumberFormat('ko-KR').format(amount)}원`;
-  switch (type) {
-    case 'MAXIMUM':
-      return `최대 ${formatted}`;
-    case 'MONTHLY':
-      return `월 ${formatted}`;
-    case 'MONTHLY_MAXIMUM':
-      return `월 최대 ${formatted}`;
-    default:
-      return formatted;
-  }
-}
-
-function supportLabel(policy: PolicySummary) {
-  if (policy.supportAmount !== null) {
-    return formatSupportAmount(policy.supportAmount, policy.supportAmountType);
-  }
-  return policy.supportText || '지원 내용 확인';
-}
-
-function periodLabel(type: PolicyApplicationPeriodType, endDate: string | null, raw: string) {
-  if (endDate) return endDate;
-  switch (type) {
-    case 'ALWAYS':
-      return '상시 신청';
-    case 'CLOSED':
-      return '신청 마감';
-    case 'UNTIL_BUDGET':
-      return '예산 소진 시까지';
-    default:
-      return raw || '기간 확인 필요';
-  }
-}
-
 function isPresent(value: string | null): value is string {
   return Boolean(value);
 }
@@ -119,6 +69,65 @@ function mergePolicies(current: PolicySummary[], incoming: PolicySummary[]) {
   const byId = new Map(current.map((policy) => [policy.policyId, policy]));
   incoming.forEach((policy) => byId.set(policy.policyId, policy));
   return [...byId.values()];
+}
+
+function recommendationRank(policy: PolicySummary) {
+  const statusRank =
+    policy.recommendationStatus === 'RECOMMENDED'
+      ? 300
+      : policy.recommendationStatus === 'CHECK_REQUIRED'
+        ? 200
+        : 100;
+  return statusRank + policy.recommendationReasons.length;
+}
+
+function deadlineTimestamp(value: string | null) {
+  if (!value) return null;
+  const timestamp = new Date(value.includes('T') ? value : `${value}T00:00:00`).getTime();
+  return Number.isNaN(timestamp) ? null : timestamp;
+}
+
+function compareDeadline(a: PolicySummary, b: PolicySummary) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayTimestamp = today.getTime();
+  const aTimestamp = deadlineTimestamp(a.applicationEndDate);
+  const bTimestamp = deadlineTimestamp(b.applicationEndDate);
+  const aGroup = aTimestamp === null ? 2 : aTimestamp < todayTimestamp ? 1 : 0;
+  const bGroup = bTimestamp === null ? 2 : bTimestamp < todayTimestamp ? 1 : 0;
+
+  if (aGroup !== bGroup) return aGroup - bGroup;
+  if (aTimestamp === null || bTimestamp === null) return 0;
+  return aGroup === 1 ? bTimestamp - aTimestamp : aTimestamp - bTimestamp;
+}
+
+function supportCadenceRank(policy: PolicySummary) {
+  if (policy.supportAmount === null) return 2;
+  return policy.supportAmountType === 'MONTHLY' || policy.supportAmountType === 'MONTHLY_MAXIMUM'
+    ? 1
+    : 0;
+}
+
+function compareSupport(a: PolicySummary, b: PolicySummary) {
+  const cadenceComparison = supportCadenceRank(a) - supportCadenceRank(b);
+  if (cadenceComparison !== 0) return cadenceComparison;
+  return (b.supportAmount ?? -1) - (a.supportAmount ?? -1);
+}
+
+function sortPolicies(policies: PolicySummary[], sort: PolicySort) {
+  return [...policies].sort((a, b) => {
+    const primaryComparison =
+      sort === 'recommendation'
+        ? recommendationRank(b) - recommendationRank(a)
+        : sort === 'deadline'
+          ? compareDeadline(a, b)
+          : compareSupport(a, b);
+    if (primaryComparison !== 0) return primaryComparison;
+
+    const recommendationComparison = recommendationRank(b) - recommendationRank(a);
+    if (recommendationComparison !== 0) return recommendationComparison;
+    return a.title.localeCompare(b.title, 'ko-KR');
+  });
 }
 
 function hiddenPolicyRequest(policy: PolicySummary) {
@@ -143,6 +152,7 @@ function PoliciesPage() {
   const [category, setCategory] = useState<PolicyCategory | null>(initialFilters.category);
   const [keyword, setKeyword] = useState(initialFilters.keyword);
   const [keywordDraft, setKeywordDraft] = useState(initialFilters.keyword);
+  const [sort, setSort] = useState<PolicySort>('recommendation');
   const [preference, setPreference] = useState<PolicyPreference | null>(null);
   const [preferenceLoading, setPreferenceLoading] = useState(true);
   const [preferenceError, setPreferenceError] = useState<string | null>(null);
@@ -336,6 +346,23 @@ function PoliciesPage() {
     }
   };
 
+  const sortedItems = sortPolicies(items, sort);
+  const recommendedPolicies = sortedItems.filter(
+    (policy) => policy.recommendationStatus === 'RECOMMENDED',
+  );
+  const checkRequiredPolicies = sortedItems.filter(
+    (policy) => policy.recommendationStatus === 'CHECK_REQUIRED',
+  );
+  const discoverPolicies = sortedItems.filter(
+    (policy) => policy.recommendationStatus === 'DISCOVER',
+  );
+
+  const openPolicy = (policy: PolicySummary) => {
+    navigate(`/policies/${encodeURIComponent(policy.policyId)}`, {
+      state: { summary: policy } satisfies PolicyDetailNavigationState,
+    });
+  };
+
   const profileConditions = preference
     ? [
         preference.age ? `만 ${preference.age}세` : null,
@@ -451,7 +478,20 @@ function PoliciesPage() {
                 />
                 <button type="submit">검색</button>
               </form>
-              <span className="policies__sort-label">백엔드 추천순</span>
+              <label className="policies__sort-control">
+                <ArrowUpDown size={16} aria-hidden="true" />
+                <span className="sr-only">정책 정렬 기준</span>
+                <select
+                  value={sort}
+                  onChange={(event) => setSort(event.target.value as PolicySort)}
+                >
+                  {POLICY_SORT_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
               {category || keyword ? (
                 <button
                   className="policies__reset"
@@ -505,86 +545,50 @@ function PoliciesPage() {
               onAction={category || keyword ? () => applyFilters(null, '') : undefined}
             />
           ) : (
-            <section className="policies__list" aria-label="추천 정책 목록">
-              {items.map((policy) => {
-                const visual = policy.categoryType
-                  ? CATEGORY_VISUALS[policy.categoryType]
-                  : undefined;
-                const Icon = visual?.icon ?? Landmark;
-                const visualTone = visual?.tone ?? 'mint';
-                const categoryName = visual?.label ?? (policy.category.trim() || '기타');
-                const reason = policy.recommendationReasons[0] ?? policy.eligibilityReasons[0];
-                return (
-                  <article className="ui-card policy-card" key={policy.policyId}>
-                    <span className={`policy-card__icon policy-card__icon--${visualTone}`}>
-                      <Icon size={22} />
-                    </span>
-
-                    <div className="policy-card__body">
-                      <div className="policy-card__title-row">
-                        <span className="status-badge">
-                          {policy.recommendationStatus === 'RECOMMENDED'
-                            ? '추천'
-                            : policy.recommendationStatus === 'DISCOVER'
-                              ? '둘러보기'
-                              : '확인 필요'}
-                        </span>
-                        <span className="policy-card__category">{categoryName}</span>
-                      </div>
-                      <h2>{policy.title}</h2>
-                      <p>{policy.shortSummary || policy.summary}</p>
-                      {reason ? <p className="policy-card__reason">{reason}</p> : null}
-                      <div className="policy-card__meta">
-                        <span>
-                          <MapPin size={13} />
-                          {policy.agency || '기관 확인'}
-                        </span>
-                        <span>
-                          <UserRoundCheck size={13} />
-                          {policy.target || '지원 대상 확인'}
-                        </span>
-                        <span>
-                          <CircleDollarSign size={13} />
-                          {supportLabel(policy)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="policy-card__action">
-                      <span>{policy.applicationEndDate ? '신청 마감' : '신청 기간'}</span>
-                      <strong>
-                        {periodLabel(
-                          policy.applicationPeriodType,
-                          policy.applicationEndDate,
-                          policy.applicationPeriodText,
-                        )}
-                      </strong>
-                      <button
-                        className="policy-card__detail"
-                        type="button"
-                        onClick={() =>
-                          navigate(`/policies/${encodeURIComponent(policy.policyId)}`, {
-                            state: { summary: policy } satisfies PolicyDetailNavigationState,
-                          })
-                        }
-                        aria-label={`${policy.title} 상세 보기`}
-                      >
-                        상세 보기 <ChevronRight size={15} />
-                      </button>
-                      <button
-                        className="policy-card__hide"
-                        type="button"
-                        disabled={hidingPolicyIds.has(policy.policyId)}
-                        onClick={() => void handleHide(policy)}
-                        aria-label={`${policy.title} 관심 없음으로 설정`}
-                      >
-                        <EyeOff size={14} /> 관심 없음
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
-            </section>
+            <div className="policies__sections">
+              {keyword ? (
+                <PolicyListSection
+                  id="policy-search-results"
+                  title={`“${keyword}” 검색 결과`}
+                  description={`${items.length}개의 정책을 찾았어요. 상태와 관계없이 선택한 기준으로 정렬합니다.`}
+                  policies={sortedItems}
+                  hidingPolicyIds={hidingPolicyIds}
+                  onOpen={openPolicy}
+                  onHide={(policy) => void handleHide(policy)}
+                />
+              ) : (
+                <>
+                  <PolicyListSection
+                    id="policy-recommended-section"
+                    title="내게 잘 맞는 정책"
+                    description="저장한 상황과 신청 조건이 잘 맞는 정책이에요."
+                    policies={recommendedPolicies}
+                    featuredFirst
+                    hidingPolicyIds={hidingPolicyIds}
+                    onOpen={openPolicy}
+                    onHide={(policy) => void handleHide(policy)}
+                  />
+                  <PolicyListSection
+                    id="policy-check-required-section"
+                    title="조건을 확인해 볼 정책"
+                    description="관련성은 있지만 신청 전에 확인할 내용이 있어요."
+                    policies={checkRequiredPolicies}
+                    hidingPolicyIds={hidingPolicyIds}
+                    onOpen={openPolicy}
+                    onHide={(policy) => void handleHide(policy)}
+                  />
+                  <PolicyListSection
+                    id="policy-discover-section"
+                    title="더 둘러볼 정책"
+                    description="추천 조건과 관계없이 함께 확인할 수 있어요."
+                    policies={discoverPolicies}
+                    hidingPolicyIds={hidingPolicyIds}
+                    onOpen={openPolicy}
+                    onHide={(policy) => void handleHide(policy)}
+                  />
+                </>
+              )}
+            </div>
           )}
 
           {partialResult ? (
