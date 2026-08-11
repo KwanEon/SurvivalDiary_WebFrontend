@@ -29,7 +29,10 @@ import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react
 import { Link } from 'wouter';
 import { useAuth } from '../../auth/AuthContext';
 import { getPolicyPreference, getPolicyRecommendations } from '../../policies/api';
-import type { PolicySummary } from '../../policies/types';
+import type {
+  PolicyDetailNavigationState,
+  PolicySummary,
+} from '../../policies/types';
 import { getExpenses, getHomeSummary, saveTodayBudget } from '../api';
 import { budgetPresets, homeNews } from '../mocks';
 import type { DashboardLoadState, ExpenseSummary, HomeSummary } from '../types';
@@ -741,8 +744,9 @@ function DashboardPage() {
                     return (
                       <Link
                         className={`ui-card dashboard-policy-card ${policyIndex === 0 ? 'dashboard-policy-card--featured' : ''}`}
-                        href={`/policies?keyword=${encodeURIComponent(policy.title)}`}
+                        href={`/policies/${encodeURIComponent(policy.policyId)}`}
                         key={policy.policyId}
+                        state={{ summary: policy } satisfies PolicyDetailNavigationState}
                         tabIndex={pageIndex === policyPageIndex ? undefined : -1}
                       >
                         <div className="dashboard-policy-card__tags">
