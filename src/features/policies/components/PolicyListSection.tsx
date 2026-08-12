@@ -161,8 +161,10 @@ function PolicyListSection({
   return (
     <section className="policies-section" aria-labelledby={id}>
       <header className="policies-section__heading">
-        <h2 id={id}>{title}</h2>
-        <span>{policies.length}개</span>
+        <h2 id={id}>
+          {title}
+          <span className="policies-section__count">{policies.length}개</span>
+        </h2>
       </header>
       <div className="policies__list">
         {policies.map((policy, index) => (
