@@ -29,9 +29,12 @@ import type {
   PolicyHiddenNotice,
   PolicyListNavigationState,
   PolicyPreference,
+  PolicyRecommendationRequest,
   PolicySummary,
 } from '../types';
 import '../styles/policies.css';
+
+const INITIAL_POLICY_BATCH_SCAN_LIMIT = 2;
 
 function readFilters() {
   const params = new URLSearchParams(window.location.search);
@@ -58,6 +61,37 @@ function mergePolicies(current: PolicySummary[], incoming: PolicySummary[]) {
   const byId = new Map(current.map((policy) => [policy.policyId, policy]));
   incoming.forEach((policy) => byId.set(policy.policyId, policy));
   return [...byId.values()];
+}
+
+async function getInitialPolicyRecommendations(
+  request: PolicyRecommendationRequest,
+  signal: AbortSignal,
+) {
+  let response = await getPolicyRecommendations(request, signal);
+  let items = response.items;
+  let checkedProviderPages = response.checkedProviderPages;
+
+  for (
+    let batch = 1;
+    batch < INITIAL_POLICY_BATCH_SCAN_LIMIT && items.length === 0 && response.nextPage !== null;
+    batch += 1
+  ) {
+    response = await getPolicyRecommendations(
+      {
+        ...request,
+        page: response.nextPage,
+      },
+      signal,
+    );
+    items = mergePolicies(items, response.items);
+    checkedProviderPages += response.checkedProviderPages;
+  }
+
+  return {
+    ...response,
+    items,
+    checkedProviderPages,
+  };
 }
 
 function recommendationRank(policy: PolicySummary) {
@@ -225,7 +259,7 @@ function PoliciesPage() {
     setItems([]);
     setNextPage(null);
 
-    void getPolicyRecommendations(
+    void getInitialPolicyRecommendations(
       { category, keyword: keyword || null, page: 1, size: 20 },
       controller.signal,
     )
@@ -525,10 +559,20 @@ function PoliciesPage() {
             />
           ) : items.length === 0 ? (
             <PolicyStateView
-              title="조건에 맞는 정책을 찾지 못했어요"
-              description="카테고리나 검색어를 초기화한 뒤 다시 확인해 보세요."
-              actionLabel={category || keyword ? '필터 초기화' : undefined}
-              onAction={category || keyword ? () => applyFilters(null, '') : undefined}
+              title={
+                nextPage
+                  ? '현재 조회 범위에서는 조건에 맞는 정책을 찾지 못했어요'
+                  : '조건에 맞는 정책을 찾지 못했어요'
+              }
+              description={
+                nextPage
+                  ? '아래의 더 많은 정책 보기를 누르면 외부 제공처의 다음 범위를 계속 확인할 수 있어요.'
+                  : '카테고리나 검색어를 초기화한 뒤 다시 확인해 보세요.'
+              }
+              actionLabel={!nextPage && (category || keyword) ? '필터 초기화' : undefined}
+              onAction={
+                !nextPage && (category || keyword) ? () => applyFilters(null, '') : undefined
+              }
             />
           ) : (
             <div className="policies__sections">
