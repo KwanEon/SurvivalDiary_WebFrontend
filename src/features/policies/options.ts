@@ -36,11 +36,27 @@ export const POLICY_CATEGORY_OPTIONS: Option<PolicyCategory>[] = [
   { value: 'PARTICIPATION_RIGHTS', label: '참여·권리' },
 ];
 
+const POLICY_CATEGORY_VALUES = new Set<string>(
+  POLICY_CATEGORY_OPTIONS.map((option) => option.value),
+);
+
 export const POLICY_INTEREST_OPTIONS: Option<PolicyInterest>[] = [
   ...POLICY_CATEGORY_OPTIONS,
   { value: 'ASSET_BUILDING', label: '자산 형성' },
   { value: 'TRANSPORT', label: '교통' },
 ];
+
+export function isPolicyCategory(value: string): value is PolicyCategory {
+  return POLICY_CATEGORY_VALUES.has(value);
+}
+
+export function getPreferredPolicyCategory(interests: PolicyInterest[]) {
+  for (let index = interests.length - 1; index >= 0; index -= 1) {
+    const interest = interests[index];
+    if (isPolicyCategory(interest)) return interest;
+  }
+  return null;
+}
 
 export function regionLabel(code: string | null) {
   if (!code) return null;
