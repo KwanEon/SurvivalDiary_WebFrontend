@@ -453,12 +453,6 @@ function PoliciesPage() {
             </div>
           </section>
 
-          <div className="policies__result-meta">
-            <p>
-              정책 <strong>{items.length}개</strong>
-            </p>
-          </div>
-
           {listLoading ? (
             <PolicyStateView title="정책 찾는 중" loading />
           ) : listError ? (
