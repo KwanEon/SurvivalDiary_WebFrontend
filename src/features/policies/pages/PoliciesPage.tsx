@@ -16,7 +16,8 @@ import PolicyStateView from '../components/PolicyStateView';
 import { isAbortError, policyErrorMessage } from '../errors';
 import {
   POLICY_CATEGORY_OPTIONS,
-  educationStatusLabel,
+  educationLevelLabel,
+  enrollmentStatusLabel,
   getPreferredPolicyCategory,
   isPolicyCategory,
   regionLabel,
@@ -365,7 +366,8 @@ function PoliciesPage() {
         preference.age ? `만 ${preference.age}세` : null,
         regionLabel(preference.regionCode),
         preference.jobSeeking ? '구직 중' : workStatusLabel(preference.workStatus),
-        educationStatusLabel(preference.educationStatus),
+        educationLevelLabel(preference.educationLevel),
+        enrollmentStatusLabel(preference.enrollmentStatus),
       ].filter(isPresent)
     : [];
 

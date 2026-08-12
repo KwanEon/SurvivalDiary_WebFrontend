@@ -1,4 +1,10 @@
-import type { EducationStatus, PolicyCategory, PolicyInterest, WorkStatus } from './types';
+import type {
+  EducationLevel,
+  EnrollmentStatus,
+  PolicyCategory,
+  PolicyInterest,
+  WorkStatus,
+} from './types';
 import { REGION_OPTIONS } from './regions';
 
 export { getDistrictOptions, REGION_OPTIONS } from './regions';
@@ -20,12 +26,22 @@ export const WORK_STATUS_OPTIONS: Option<WorkStatus>[] = [
   { value: 'OTHER', label: '기타' },
 ];
 
-export const EDUCATION_STATUS_OPTIONS: Option<EducationStatus>[] = [
-  { value: 'STUDENT', label: '재학 중' },
+export const EDUCATION_LEVEL_OPTIONS: Option<EducationLevel>[] = [
+  { value: 'MIDDLE_SCHOOL_OR_LESS', label: '중학교 졸업 이하' },
+  { value: 'HIGH_SCHOOL', label: '고등학교' },
+  { value: 'COLLEGE_2_3_YEAR', label: '2·3년제 대학' },
+  { value: 'UNIVERSITY_4_YEAR', label: '4년제 대학' },
+  { value: 'GRADUATE_SCHOOL', label: '대학원 이상' },
+  { value: 'OTHER', label: '기타 교육 과정' },
+];
+
+export const ENROLLMENT_STATUS_OPTIONS: Option<EnrollmentStatus>[] = [
+  { value: 'ENROLLED', label: '재학 중' },
   { value: 'ON_LEAVE', label: '휴학 중' },
+  { value: 'EXPECTED_GRADUATION', label: '졸업 예정' },
   { value: 'GRADUATED', label: '졸업' },
-  { value: 'NOT_STUDENT', label: '비학생' },
-  { value: 'OTHER', label: '기타' },
+  { value: 'DROPPED_OUT', label: '중퇴' },
+  { value: 'NOT_APPLICABLE', label: '해당 없음' },
 ];
 
 export const POLICY_CATEGORY_OPTIONS: Option<PolicyCategory>[] = [
@@ -68,7 +84,12 @@ export function workStatusLabel(status: WorkStatus | null) {
   return WORK_STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status;
 }
 
-export function educationStatusLabel(status: EducationStatus | null) {
+export function educationLevelLabel(level: EducationLevel | null) {
+  if (!level) return null;
+  return EDUCATION_LEVEL_OPTIONS.find((option) => option.value === level)?.label ?? level;
+}
+
+export function enrollmentStatusLabel(status: EnrollmentStatus | null) {
   if (!status) return null;
-  return EDUCATION_STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status;
+  return ENROLLMENT_STATUS_OPTIONS.find((option) => option.value === status)?.label ?? status;
 }

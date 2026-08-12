@@ -5,7 +5,8 @@ import { getPolicyPreference, savePolicyPreference } from '../api';
 import PolicyStateView from '../components/PolicyStateView';
 import { isAbortError, policyErrorMessage } from '../errors';
 import {
-  EDUCATION_STATUS_OPTIONS,
+  EDUCATION_LEVEL_OPTIONS,
+  ENROLLMENT_STATUS_OPTIONS,
   getPreferredPolicyCategory,
   getDistrictOptions,
   POLICY_INTEREST_OPTIONS,
@@ -13,7 +14,8 @@ import {
   WORK_STATUS_OPTIONS,
 } from '../options';
 import type {
-  EducationStatus,
+  EducationLevel,
+  EnrollmentStatus,
   PolicyInterest,
   PolicyPreference,
   PolicyPreferenceInput,
@@ -27,7 +29,8 @@ interface PreferenceFormState {
   districtCode: string;
   workStatus: WorkStatus | '';
   jobSeeking: '' | 'true' | 'false';
-  educationStatus: EducationStatus | '';
+  educationLevel: EducationLevel | '';
+  enrollmentStatus: EnrollmentStatus | '';
   interests: PolicyInterest[];
 }
 
@@ -39,20 +42,41 @@ const EMPTY_FORM: PreferenceFormState = {
   districtCode: '',
   workStatus: '',
   jobSeeking: '',
-  educationStatus: '',
+  educationLevel: '',
+  enrollmentStatus: '',
   interests: [],
 };
 
 function toFormState(preference: PolicyPreference): PreferenceFormState {
+  const educationLevel = preference.educationLevel ?? '';
   return {
     age: preference.age?.toString() ?? '',
     regionCode: preference.regionCode ?? '',
     districtCode: preference.districtCode ?? '',
     workStatus: preference.workStatus ?? '',
     jobSeeking: preference.jobSeeking === null ? '' : preference.jobSeeking ? 'true' : 'false',
-    educationStatus: preference.educationStatus ?? '',
+    educationLevel,
+    enrollmentStatus: educationLevel
+      ? (preference.enrollmentStatus ?? legacyEnrollmentStatus(preference.educationStatus))
+      : '',
     interests: preference.interests ?? [],
   };
+}
+
+function legacyEnrollmentStatus(status: string | null): EnrollmentStatus | '' {
+  switch (status) {
+    case 'STUDENT':
+      return 'ENROLLED';
+    case 'ON_LEAVE':
+      return 'ON_LEAVE';
+    case 'GRADUATED':
+      return 'GRADUATED';
+    case 'NOT_STUDENT':
+    case 'OTHER':
+      return 'NOT_APPLICABLE';
+    default:
+      return '';
+  }
 }
 
 function validate(form: PreferenceFormState): FormErrors {
@@ -136,7 +160,8 @@ function PolicyConditionsPage() {
       districtCode: form.districtCode || null,
       workStatus: form.workStatus || null,
       jobSeeking: form.jobSeeking === '' ? null : form.jobSeeking === 'true',
-      educationStatus: form.educationStatus || null,
+      educationLevel: form.educationLevel || null,
+      enrollmentStatus: form.enrollmentStatus || null,
       interests: form.interests,
     };
 
@@ -315,7 +340,7 @@ function PolicyConditionsPage() {
             </div>
           </div>
 
-          <div className="policy-conditions-grid policy-conditions-grid--three">
+          <div className="policy-conditions-grid">
             <label className="policy-field">
               <span>근로 상태</span>
               <select
@@ -348,15 +373,39 @@ function PolicyConditionsPage() {
             </label>
 
             <label className="policy-field">
-              <span>교육 상태</span>
+              <span>교육 단계</span>
               <select
-                value={form.educationStatus}
-                onChange={(event) =>
-                  updateField('educationStatus', event.target.value as EducationStatus | '')
-                }
+                value={form.educationLevel}
+                onChange={(event) => {
+                  const value = event.target.value as EducationLevel | '';
+                  const changed = value !== form.educationLevel;
+                  updateField('educationLevel', value);
+                  if (changed) updateField('enrollmentStatus', '');
+                }}
               >
                 <option value="">선택하지 않음</option>
-                {EDUCATION_STATUS_OPTIONS.map((option) => (
+                {EDUCATION_LEVEL_OPTIONS.map((option) => (
+                  <option value={option.value} key={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <small>2·3년제와 4년제는 제공처에서 같은 대학 학력 범위로 조회됩니다.</small>
+            </label>
+
+            <label className="policy-field">
+              <span>현재 학적 상태</span>
+              <select
+                value={form.enrollmentStatus}
+                disabled={!form.educationLevel}
+                onChange={(event) =>
+                  updateField('enrollmentStatus', event.target.value as EnrollmentStatus | '')
+                }
+              >
+                <option value="">
+                  {form.educationLevel ? '선택하지 않음' : '교육 단계를 먼저 선택해 주세요'}
+                </option>
+                {ENROLLMENT_STATUS_OPTIONS.map((option) => (
                   <option value={option.value} key={option.value}>
                     {option.label}
                   </option>
