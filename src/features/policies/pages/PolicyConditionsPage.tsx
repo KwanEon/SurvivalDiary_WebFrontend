@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, RotateCcw, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Check, RotateCcw } from 'lucide-react';
 import { type FormEvent, useEffect, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { getPolicyPreference, savePolicyPreference } from '../api';
@@ -178,11 +178,7 @@ function PolicyConditionsPage() {
   if (isLoading) {
     return (
       <div className="page policy-conditions-page">
-        <PolicyStateView
-          title="저장된 조건을 확인하고 있어요"
-          description="잠시만 기다려 주세요."
-          loading
-        />
+        <PolicyStateView title="조건 불러오는 중" loading />
       </div>
     );
   }
@@ -204,23 +200,11 @@ function PolicyConditionsPage() {
   return (
     <div className="page policy-conditions-page">
       <div className="page-heading policy-conditions-heading">
-        <div>
-          <p className="page-heading__eyebrow">Policy profile</p>
-          <h1>내 정책 조건</h1>
-          <p>저장한 조건을 기준으로 관련성이 높은 청년 정책 후보를 찾아드려요.</p>
-        </div>
+        <h1>내 정책 조건</h1>
         <Link href="/policies" className="button button--secondary">
           <ArrowLeft size={17} /> 목록으로
         </Link>
       </div>
-
-      <article className="policy-conditions-notice">
-        <ShieldCheck size={20} aria-hidden="true" />
-        <div>
-          <strong>조건은 로그인한 계정에 저장됩니다.</strong>
-          <p>추천 후보를 좁히는 용도로만 사용하며 브라우저에 별도로 저장하지 않습니다.</p>
-        </div>
-      </article>
 
       <form className="ui-card policy-conditions-form" onSubmit={handleSubmit} noValidate>
         <section className="policy-conditions-section" aria-labelledby="basic-condition-title">
@@ -228,7 +212,6 @@ function PolicyConditionsPage() {
             <span>1</span>
             <div>
               <h2 id="basic-condition-title">기본 조건</h2>
-              <p>나이와 거주 지역은 정책 대상 범위를 확인하는 필수 조건입니다.</p>
             </div>
           </div>
 
@@ -245,17 +228,13 @@ function PolicyConditionsPage() {
                 value={form.age}
                 onChange={(event) => updateField('age', event.target.value)}
                 aria-invalid={Boolean(errors.age)}
-                aria-describedby={errors.age ? 'policy-age-error' : 'policy-age-help'}
+                aria-describedby={errors.age ? 'policy-age-error' : undefined}
               />
               {errors.age ? (
                 <small className="policy-field__error" id="policy-age-error">
                   {errors.age}
                 </small>
-              ) : (
-                <small id="policy-age-help">
-                  회원 생년월일이 있으면 서버에서 계산한 값이 표시됩니다.
-                </small>
-              )}
+              ) : null}
             </label>
 
             <label className="policy-field">
@@ -294,9 +273,7 @@ function PolicyConditionsPage() {
                 disabled={!form.regionCode || districtOptions.length === 0}
                 onChange={(event) => updateField('districtCode', event.target.value)}
                 aria-invalid={Boolean(errors.districtCode)}
-                aria-describedby={
-                  errors.districtCode ? 'policy-district-error' : 'policy-district-help'
-                }
+                aria-describedby={errors.districtCode ? 'policy-district-error' : undefined}
               >
                 <option value="">
                   {form.regionCode ? '시·도 전체' : '시·도를 먼저 선택해 주세요'}
@@ -311,13 +288,7 @@ function PolicyConditionsPage() {
                 <small className="policy-field__error" id="policy-district-error">
                   {errors.districtCode}
                 </small>
-              ) : (
-                <small id="policy-district-help">
-                  {form.regionCode && districtOptions.length === 0
-                    ? '시·군·구가 없는 지역으로 시·도 전체 조건이 적용됩니다.'
-                    : '시·도 전체 정책을 보려면 시·도 전체를 선택하세요.'}
-                </small>
-              )}
+              ) : null}
             </label>
           </div>
         </section>
@@ -327,7 +298,6 @@ function PolicyConditionsPage() {
             <span>2</span>
             <div>
               <h2 id="current-state-title">현재 상황</h2>
-              <p>모르는 항목은 선택하지 않아도 됩니다.</p>
             </div>
           </div>
 
@@ -381,7 +351,6 @@ function PolicyConditionsPage() {
                   </option>
                 ))}
               </select>
-              <small>2·3년제와 4년제는 제공처에서 같은 대학 학력 범위로 조회됩니다.</small>
             </label>
 
             <label className="policy-field">
@@ -411,7 +380,6 @@ function PolicyConditionsPage() {
             <span>3</span>
             <span>
               <strong>관심 주제</strong>
-              <small>여러 개 선택할 수 있으며 추천 우선순위에 반영됩니다.</small>
             </span>
           </legend>
 

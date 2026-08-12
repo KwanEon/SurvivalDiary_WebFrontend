@@ -1,4 +1,4 @@
-import { History, Landmark, Search, Sparkles, UserRoundCheck } from 'lucide-react';
+import { History, Landmark, Search, UserRoundCheck } from 'lucide-react';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useHistoryState } from 'wouter/use-browser-location';
@@ -139,7 +139,6 @@ function PoliciesPage() {
   const [preferenceReloadKey, setPreferenceReloadKey] = useState(0);
   const [items, setItems] = useState<PolicySummary[]>([]);
   const [nextPage, setNextPage] = useState<number | null>(null);
-  const [checkedPages, setCheckedPages] = useState(0);
   const [partialResult, setPartialResult] = useState(false);
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError] = useState<unknown>(null);
@@ -198,7 +197,6 @@ function PoliciesPage() {
     if (!preference?.saved) {
       setItems([]);
       setNextPage(null);
-      setCheckedPages(0);
       return;
     }
 
@@ -216,7 +214,6 @@ function PoliciesPage() {
       .then((response) => {
         setItems(response.items);
         setNextPage(response.nextPage);
-        setCheckedPages(response.checkedProviderPages);
         setPartialResult(response.partialResult);
       })
       .catch((error: unknown) => {
@@ -255,7 +252,6 @@ function PoliciesPage() {
       });
       setItems((current) => mergePolicies(current, response.items));
       setNextPage(response.nextPage);
-      setCheckedPages((current) => current + response.checkedProviderPages);
       setPartialResult(response.partialResult);
     } catch (error) {
       setMoreError(policyErrorMessage(error, '다음 정책을 불러오지 못했습니다.'));
@@ -358,11 +354,7 @@ function PoliciesPage() {
   if (preferenceLoading) {
     return (
       <div className="page policies">
-        <PolicyStateView
-          title="추천 조건을 확인하고 있어요"
-          description="로그인한 계정의 정책 조건을 불러오는 중입니다."
-          loading
-        />
+        <PolicyStateView title="정책 불러오는 중" loading />
       </div>
     );
   }
@@ -384,11 +376,7 @@ function PoliciesPage() {
   return (
     <div className="page policies">
       <div className="page-heading">
-        <div>
-          <p className="page-heading__eyebrow">Youth policy</p>
-          <h1>청년 정책 추천</h1>
-          <p>저장한 조건과 관련성이 높은 정책 후보를 확인해 보세요.</p>
-        </div>
+        <h1>청년 정책</h1>
         <div className="policies__heading-actions">
           <Link href="/policies/hidden" className="button button--soft">
             <History size={17} /> 관심 없음 정책
@@ -409,15 +397,6 @@ function PoliciesPage() {
       ) : (
         <>
           <section className="policies-profile" aria-label="현재 추천 조건">
-            <div className="policies-profile__title">
-              <span>
-                <Sparkles size={19} />
-              </span>
-              <div>
-                <strong>저장한 조건을 기준으로 추천 중이에요</strong>
-                <p>추천은 신청 자격 확정이 아니므로 공식 공고를 꼭 확인해 주세요.</p>
-              </div>
-            </div>
             <div className="policies-profile__conditions">
               {profileConditions.map((condition) => (
                 <span key={condition}>{condition}</span>
@@ -476,17 +455,12 @@ function PoliciesPage() {
 
           <div className="policies__result-meta">
             <p>
-              현재 확인한 정책 <strong>{items.length}개</strong>
+              정책 <strong>{items.length}개</strong>
             </p>
-            {checkedPages > 0 ? <span>외부 데이터 {checkedPages}페이지 확인</span> : null}
           </div>
 
           {listLoading ? (
-            <PolicyStateView
-              title="맞춤 정책을 찾고 있어요"
-              description="저장한 조건과 정책 대상 정보를 비교하고 있습니다."
-              loading
-            />
+            <PolicyStateView title="정책 찾는 중" loading />
           ) : listError ? (
             <PolicyStateView
               title={
@@ -530,7 +504,6 @@ function PoliciesPage() {
                 <PolicyListSection
                   id="policy-search-results"
                   title={`“${keyword}” 검색 결과`}
-                  description={`${items.length}개의 정책을 찾았어요. 상태와 관계없이 선택한 기준으로 정렬합니다.`}
                   policies={sortedItems}
                   hidingPolicyIds={hidingPolicyIds}
                   onOpen={openPolicy}
@@ -541,7 +514,6 @@ function PoliciesPage() {
                   <PolicyListSection
                     id="policy-recommended-section"
                     title="내게 잘 맞는 정책"
-                    description="저장한 상황과 신청 조건이 잘 맞는 정책이에요."
                     policies={recommendedPolicies}
                     featuredFirst
                     hidingPolicyIds={hidingPolicyIds}
@@ -550,8 +522,7 @@ function PoliciesPage() {
                   />
                   <PolicyListSection
                     id="policy-check-required-section"
-                    title="조건을 확인해 볼 정책"
-                    description="관련성은 있지만 신청 전에 확인할 내용이 있어요."
+                    title="확인할 정책"
                     policies={checkRequiredPolicies}
                     hidingPolicyIds={hidingPolicyIds}
                     onOpen={openPolicy}
@@ -559,8 +530,7 @@ function PoliciesPage() {
                   />
                   <PolicyListSection
                     id="policy-discover-section"
-                    title="더 둘러볼 정책"
-                    description="추천 조건과 관계없이 함께 확인할 수 있어요."
+                    title="다른 정책"
                     policies={discoverPolicies}
                     hidingPolicyIds={hidingPolicyIds}
                     onOpen={openPolicy}
@@ -572,9 +542,7 @@ function PoliciesPage() {
           )}
 
           {partialResult ? (
-            <p className="policies__partial-notice">
-              외부 제공처 조회 범위에 따라 일부 정책만 표시될 수 있습니다.
-            </p>
+            <p className="policies__partial-notice">일부 정책만 표시 중입니다.</p>
           ) : null}
 
           {moreError ? (
@@ -598,8 +566,7 @@ function PoliciesPage() {
               <Landmark size={19} />
             </span>
             <div>
-              <strong>추천 결과는 신청 가능 여부를 확정하지 않습니다.</strong>
-              <p>신청 전 반드시 해당 기관의 공식 공고에서 자격 요건과 기간을 확인해 주세요.</p>
+              <strong>신청 전 공식 공고를 확인하세요.</strong>
             </div>
           </article>
         </>

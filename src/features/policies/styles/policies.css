@@ -9,47 +9,20 @@
 .policies-profile {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: var(--space-5);
   margin-bottom: var(--space-5);
-  padding: var(--space-5) var(--space-6);
+  padding: var(--space-3) var(--space-4);
   border: 1px solid var(--color-primary-300);
   border-radius: var(--radius-lg);
   background: linear-gradient(90deg, var(--color-primary-50), var(--color-surface));
-}
-
-.policies-profile__title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.policies-profile__title > span {
-  display: grid;
-  width: 2.75rem;
-  height: 2.75rem;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: var(--radius-md);
-  color: var(--color-primary-800);
-  background: var(--color-primary-100);
-}
-
-.policies-profile__title strong {
-  font-size: 0.875rem;
-}
-
-.policies-profile__title p {
-  margin-top: var(--space-1);
-  color: var(--color-ink-500);
-  font-size: 0.6875rem;
 }
 
 .policies-profile__conditions {
   display: flex;
   gap: var(--space-2);
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .policies-profile__conditions span {

@@ -140,7 +140,6 @@ function PolicyCard({ policy, featured = false, hiding, onOpen, onHide }: Policy
 interface PolicyListSectionProps {
   id: string;
   title: string;
-  description: string;
   policies: PolicySummary[];
   featuredFirst?: boolean;
   hidingPolicyIds: Set<string>;
@@ -151,7 +150,6 @@ interface PolicyListSectionProps {
 function PolicyListSection({
   id,
   title,
-  description,
   policies,
   featuredFirst = false,
   hidingPolicyIds,
@@ -163,10 +161,7 @@ function PolicyListSection({
   return (
     <section className="policies-section" aria-labelledby={id}>
       <header className="policies-section__heading">
-        <div>
-          <h2 id={id}>{title}</h2>
-          <p>{description}</p>
-        </div>
+        <h2 id={id}>{title}</h2>
         <span>{policies.length}개</span>
       </header>
       <div className="policies__list">

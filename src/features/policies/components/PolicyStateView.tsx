@@ -3,7 +3,7 @@ import '../styles/policy-state.css';
 
 interface PolicyStateViewProps {
   title: string;
-  description: string;
+  description?: string;
   tone?: 'default' | 'danger';
   loading?: boolean;
   actionLabel?: string;
@@ -31,7 +31,7 @@ function PolicyStateView({
       </span>
       <div>
         <h2>{title}</h2>
-        <p>{description}</p>
+        {description ? <p>{description}</p> : null}
       </div>
       {actionLabel && onAction ? (
         <button className="button button--secondary" type="button" onClick={onAction}>
