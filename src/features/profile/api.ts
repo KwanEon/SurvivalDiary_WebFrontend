@@ -29,3 +29,14 @@ export function uploadProfileImage(image: File) {
 export function deleteProfileImage() {
   return apiRequest<User>('/users/me/profile-image', { method: 'DELETE' });
 }
+
+export function updateDefaultResidence(input: {
+  address: string;
+  latitude: number;
+  longitude: number;
+}) {
+  return apiRequest<User>('/users/me/default-residence', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
