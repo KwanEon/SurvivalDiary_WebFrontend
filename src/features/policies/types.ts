@@ -12,7 +12,16 @@ export type WorkStatus =
   | 'FARMER'
   | 'OTHER';
 
-export type EducationStatus = 'STUDENT' | 'ON_LEAVE' | 'GRADUATED' | 'NOT_STUDENT' | 'OTHER';
+export type EducationLevel =
+  | 'MIDDLE_SCHOOL_OR_LESS'
+  | 'HIGH_SCHOOL'
+  | 'COLLEGE_2_3_YEAR'
+  | 'UNIVERSITY_4_YEAR'
+  | 'GRADUATE_SCHOOL'
+  | 'OTHER';
+
+export type EnrollmentStatus =
+  'ENROLLED' | 'ON_LEAVE' | 'EXPECTED_GRADUATION' | 'GRADUATED' | 'DROPPED_OUT' | 'NOT_APPLICABLE';
 
 export type PolicyInterest = PolicyCategory | 'ASSET_BUILDING' | 'TRANSPORT';
 
@@ -34,7 +43,9 @@ export interface PolicyPreference {
   category: string | null;
   workStatus: WorkStatus | null;
   jobSeeking: boolean | null;
-  educationStatus: EducationStatus | null;
+  educationStatus: string | null;
+  educationLevel: EducationLevel | null;
+  enrollmentStatus: EnrollmentStatus | null;
   interests: PolicyInterest[];
 }
 
@@ -44,7 +55,8 @@ export interface PolicyPreferenceInput {
   districtCode: string | null;
   workStatus: WorkStatus | null;
   jobSeeking: boolean | null;
-  educationStatus: EducationStatus | null;
+  educationLevel: EducationLevel | null;
+  enrollmentStatus: EnrollmentStatus | null;
   interests: PolicyInterest[];
 }
 
