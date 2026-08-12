@@ -692,9 +692,7 @@ function DashboardPage() {
       <section className="dashboard-policy" aria-labelledby="dashboard-policy-title">
         <div className="dashboard-section-heading">
           <div>
-            <span>Policy briefing</span>
             <h2 id="dashboard-policy-title">놓치면 아쉬운 정책</h2>
-            <p>저장한 조건과 신청 마감일을 함께 살폈어요.</p>
           </div>
           <div className="dashboard-section-heading__actions">
             {policyState === 'ready' && policyPages.length > 1 && (
