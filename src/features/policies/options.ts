@@ -66,14 +66,6 @@ export function isPolicyCategory(value: string): value is PolicyCategory {
   return POLICY_CATEGORY_VALUES.has(value);
 }
 
-export function getPreferredPolicyCategory(interests: PolicyInterest[]) {
-  for (let index = interests.length - 1; index >= 0; index -= 1) {
-    const interest = interests[index];
-    if (isPolicyCategory(interest)) return interest;
-  }
-  return null;
-}
-
 export function regionLabel(code: string | null) {
   if (!code) return null;
   return REGION_OPTIONS.find((option) => option.value === code)?.label ?? `지역 ${code}`;

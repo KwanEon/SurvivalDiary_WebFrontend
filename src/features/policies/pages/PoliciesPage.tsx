@@ -18,7 +18,6 @@ import {
   POLICY_CATEGORY_OPTIONS,
   educationLevelLabel,
   enrollmentStatusLabel,
-  getPreferredPolicyCategory,
   isPolicyCategory,
   regionLabel,
   workStatusLabel,
@@ -29,12 +28,9 @@ import type {
   PolicyHiddenNotice,
   PolicyListNavigationState,
   PolicyPreference,
-  PolicyRecommendationRequest,
   PolicySummary,
 } from '../types';
 import '../styles/policies.css';
-
-const INITIAL_POLICY_BATCH_SCAN_LIMIT = 2;
 
 function readFilters() {
   const params = new URLSearchParams(window.location.search);
@@ -61,37 +57,6 @@ function mergePolicies(current: PolicySummary[], incoming: PolicySummary[]) {
   const byId = new Map(current.map((policy) => [policy.policyId, policy]));
   incoming.forEach((policy) => byId.set(policy.policyId, policy));
   return [...byId.values()];
-}
-
-async function getInitialPolicyRecommendations(
-  request: PolicyRecommendationRequest,
-  signal: AbortSignal,
-) {
-  let response = await getPolicyRecommendations(request, signal);
-  let items = response.items;
-  let checkedProviderPages = response.checkedProviderPages;
-
-  for (
-    let batch = 1;
-    batch < INITIAL_POLICY_BATCH_SCAN_LIMIT && items.length === 0 && response.nextPage !== null;
-    batch += 1
-  ) {
-    response = await getPolicyRecommendations(
-      {
-        ...request,
-        page: response.nextPage,
-      },
-      signal,
-    );
-    items = mergePolicies(items, response.items);
-    checkedProviderPages += response.checkedProviderPages;
-  }
-
-  return {
-    ...response,
-    items,
-    checkedProviderPages,
-  };
 }
 
 function recommendationRank(policy: PolicySummary) {
@@ -139,17 +104,9 @@ function compareSupport(a: PolicySummary, b: PolicySummary) {
 
 function sortPolicies(policies: PolicySummary[], sort: PolicySort) {
   return [...policies].sort((a, b) => {
-    const primaryComparison =
-      sort === 'recommendation'
-        ? recommendationRank(b) - recommendationRank(a)
-        : sort === 'deadline'
-          ? compareDeadline(a, b)
-          : compareSupport(a, b);
-    if (primaryComparison !== 0) return primaryComparison;
-
-    const recommendationComparison = recommendationRank(b) - recommendationRank(a);
-    if (recommendationComparison !== 0) return recommendationComparison;
-    return a.title.localeCompare(b.title, 'ko-KR');
+    if (sort === 'recommendation') return recommendationRank(b) - recommendationRank(a);
+    if (sort === 'deadline') return compareDeadline(a, b);
+    return compareSupport(a, b);
   });
 }
 
@@ -223,13 +180,6 @@ function PoliciesPage() {
 
     void getPolicyPreference(controller.signal)
       .then((nextPreference) => {
-        const currentFilters = readFilters();
-        const preferredCategory = getPreferredPolicyCategory(nextPreference.interests ?? []);
-
-        if (!currentFilters.category && preferredCategory) {
-          writeFilters(preferredCategory, currentFilters.keyword, true);
-          setCategory(preferredCategory);
-        }
         setPreference(nextPreference);
       })
       .catch((error: unknown) => {
@@ -259,7 +209,7 @@ function PoliciesPage() {
     setItems([]);
     setNextPage(null);
 
-    void getInitialPolicyRecommendations(
+    void getPolicyRecommendations(
       { category, keyword: keyword || null, page: 1, size: 20 },
       controller.signal,
     )
