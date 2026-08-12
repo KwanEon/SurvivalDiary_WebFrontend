@@ -23,4 +23,15 @@ export interface ExpenseSummary {
   spentAt: string;
 }
 
+export interface NewsRecommendation {
+  newsId: number;
+  category: string;
+  title: string;
+  summary: string;
+  source: string;
+  sourceUrl: string;
+  publishedAt: string;
+  recommendationReason: string;
+}
+
 export type DashboardLoadState = 'loading' | 'ready' | 'error';
