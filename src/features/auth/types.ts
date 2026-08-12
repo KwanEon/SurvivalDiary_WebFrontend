@@ -17,6 +17,9 @@ export interface User {
   region: string | null;
   signupInterest: string | null;
   bio: string | null;
+  defaultResidenceAddress: string | null;
+  defaultResidenceLatitude: number | null;
+  defaultResidenceLongitude: number | null;
   role: 'USER' | 'ADMIN';
   createdAt: string;
 }
