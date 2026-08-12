@@ -144,7 +144,7 @@ function AppShell({ children }: AppShellProps) {
           <div className="topbar__search">
             <Search size={17} />
             <span>정책, 장소, 게시글 검색</span>
-            <kbd>⌘ K</kbd>
+            <kbd>검색</kbd>
           </div>
 
           <div className="topbar__actions">

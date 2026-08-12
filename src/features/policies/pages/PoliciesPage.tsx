@@ -17,6 +17,8 @@ import { isAbortError, policyErrorMessage } from '../errors';
 import {
   POLICY_CATEGORY_OPTIONS,
   educationStatusLabel,
+  getPreferredPolicyCategory,
+  isPolicyCategory,
   regionLabel,
   workStatusLabel,
 } from '../options';
@@ -30,18 +32,11 @@ import type {
 } from '../types';
 import '../styles/policies.css';
 
-const CATEGORY_VALUES = new Set<PolicyCategory>(
-  POLICY_CATEGORY_OPTIONS.map((option) => option.value),
-);
-
 function readFilters() {
   const params = new URLSearchParams(window.location.search);
   const categoryValue = params.get('category');
   return {
-    category:
-      categoryValue && CATEGORY_VALUES.has(categoryValue as PolicyCategory)
-        ? (categoryValue as PolicyCategory)
-        : null,
+    category: categoryValue && isPolicyCategory(categoryValue) ? categoryValue : null,
     keyword: (params.get('keyword') ?? '').trim().slice(0, 50),
   };
 }
@@ -192,7 +187,16 @@ function PoliciesPage() {
     setPreferenceError(null);
 
     void getPolicyPreference(controller.signal)
-      .then(setPreference)
+      .then((nextPreference) => {
+        const currentFilters = readFilters();
+        const preferredCategory = getPreferredPolicyCategory(nextPreference.interests ?? []);
+
+        if (!currentFilters.category && preferredCategory) {
+          writeFilters(preferredCategory, currentFilters.keyword, true);
+          setCategory(preferredCategory);
+        }
+        setPreference(nextPreference);
+      })
       .catch((error: unknown) => {
         if (!isAbortError(error)) {
           setPreferenceError(policyErrorMessage(error, '정책 추천 조건을 불러오지 못했습니다.'));
