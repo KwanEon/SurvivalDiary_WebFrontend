@@ -2,26 +2,20 @@ import {
   AlertTriangle,
   ArrowDown,
   ArrowUp,
-  Bus,
   CalendarDays,
   CalendarRange,
   Check,
   ChevronLeft,
   ChevronRight,
-  Coffee,
-  CreditCard,
   Info,
   LoaderCircle,
   ReceiptText,
   RefreshCw,
-  ShoppingBag,
   Trash2,
-  Utensils,
   WalletCards,
   X,
-  type LucideIcon,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ComponentType } from 'react';
 import { deleteExpense, getExpenses } from '../api';
 import type {
   CategoryStatistic,
@@ -34,15 +28,54 @@ import '../styles/expense-statistics.css';
 
 const wonFormatter = new Intl.NumberFormat('ko-KR');
 
+type CategoryIconComponent = ComponentType<{ size?: number }>;
+
+function createMaterialCategoryIcon(path: string): CategoryIconComponent {
+  return function MaterialCategoryIcon({ size = 24 }) {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <path d={path} />
+      </svg>
+    );
+  };
+}
+
+const RestaurantIcon = createMaterialCategoryIcon(
+  'M16 6v6c0 1.1.9 2 2 2h1v7c0 .55.45 1 1 1s1-.45 1-1V3.13c0-.65-.61-1.13-1.24-.98C17.6 2.68 16 4.51 16 6zm-5 3H9V3c0-.55-.45-1-1-1s-1 .45-1 1v6H5V3c0-.55-.45-1-1-1s-1 .45-1 1v6c0 2.21 1.79 4 4 4v8c0 .55.45 1 1 1s1-.45 1-1v-8c2.21 0 4-1.79 4-4V3c0-.55-.45-1-1-1s-1 .45-1 1v6z',
+);
+const LocalCafeIcon = createMaterialCategoryIcon(
+  'M20 3H6c-1.1 0-2 .9-2 2v8c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 5h-2V5h2v3zM3 21h16c.55 0 1-.45 1-1s-.45-1-1-1H3c-.55 0-1 .45-1 1s.45 1 1 1z',
+);
+const DirectionsBusIcon = createMaterialCategoryIcon(
+  'M4 16c0 .88.39 1.67 1 2.22v1.28c0 .83.67 1.5 1.5 1.5S8 20.33 8 19.5V19h8v.5c0 .82.67 1.5 1.5 1.5.82 0 1.5-.67 1.5-1.5v-1.28c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z',
+);
+const ShoppingBagIcon = createMaterialCategoryIcon(
+  'M18 6h-2c0-2.21-1.79-4-4-4S8 3.79 8 6H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-8 4c0 .55-.45 1-1 1s-1-.45-1-1V8h2v2zm2-6c1.1 0 2 .9 2 2h-4c0-1.1.9-2 2-2zm4 6c0 .55-.45 1-1 1s-1-.45-1-1V8h2v2z',
+);
+const MoreHorizIcon = createMaterialCategoryIcon(
+  'M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z',
+);
+
 const categories: Record<
   number,
-  { label: string; icon: LucideIcon; tone: 'food' | 'cafe' | 'transport' | 'shopping' | 'etc' }
+  {
+    label: string;
+    icon: CategoryIconComponent;
+    tone: 'food' | 'cafe' | 'transport' | 'shopping' | 'etc';
+  }
 > = {
-  1: { label: '식비', icon: Utensils, tone: 'food' },
-  2: { label: '카페', icon: Coffee, tone: 'cafe' },
-  3: { label: '교통', icon: Bus, tone: 'transport' },
-  4: { label: '쇼핑', icon: ShoppingBag, tone: 'shopping' },
-  5: { label: '기타', icon: CreditCard, tone: 'etc' },
+  1: { label: '식비', icon: RestaurantIcon, tone: 'food' },
+  2: { label: '카페', icon: LocalCafeIcon, tone: 'cafe' },
+  3: { label: '교통', icon: DirectionsBusIcon, tone: 'transport' },
+  4: { label: '쇼핑', icon: ShoppingBagIcon, tone: 'shopping' },
+  5: { label: '기타', icon: MoreHorizIcon, tone: 'etc' },
 };
 
 function formatWon(amount: number) {
@@ -53,6 +86,86 @@ function compactWon(amount: number) {
   if (amount >= 100_000_000) return `${(amount / 100_000_000).toFixed(1).replace('.0', '')}억`;
   if (amount >= 10_000) return `${(amount / 10_000).toFixed(1).replace('.0', '')}만`;
   return wonFormatter.format(amount);
+}
+
+function ExpenseTrendChart({ items }: { items: TrendItem[] }) {
+  const maxValue = Math.max(...items.map((item) => item.amount), 0);
+  const axisMax = maxValue <= 0 ? 1_000 : maxValue;
+  const points = items.map((item, index) => ({
+    ...item,
+    x: items.length === 1 ? 50 : (index / (items.length - 1)) * 100,
+    y: 100 - Math.min(1, item.amount / axisMax) * 100,
+  }));
+  const pointList = points.map((point) => `${point.x},${point.y}`).join(' ');
+  const areaPointList = points.length
+    ? `0,100 ${pointList} 100,100`
+    : '';
+  const gridTicks = Array.from({ length: 4 }, (_, index) => ({
+    position: (index / 3) * 100,
+    value: axisMax * (3 - index) / 3,
+  }));
+
+  return (
+    <div
+      className="expense-trend__chart"
+      role="img"
+      aria-label={items.map((item) => `${item.label} ${formatWon(item.amount)}`).join(', ')}
+    >
+      <div className="expense-trend__y-axis" aria-hidden="true">
+        {gridTicks.map((tick) => (
+          <span key={tick.position} style={{ top: `${tick.position}%` }}>
+            {compactWon(Math.round(tick.value))}
+          </span>
+        ))}
+      </div>
+      <svg
+        className="expense-trend__plot"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        {gridTicks.map((tick) => (
+          <line
+            className="expense-trend__grid-line"
+            key={tick.position}
+            x1="0"
+            y1={tick.position}
+            x2="100"
+            y2={tick.position}
+            vectorEffect="non-scaling-stroke"
+          />
+        ))}
+        {points.length > 0 && (
+          <>
+            <polygon className="expense-trend__area" points={areaPointList} />
+            {points.length > 1 && (
+              <polyline
+                className="expense-trend__line"
+                points={pointList}
+                vectorEffect="non-scaling-stroke"
+              />
+            )}
+          </>
+        )}
+      </svg>
+      <div className="expense-trend__points" aria-hidden="true">
+        {points.map((point) => (
+          <span
+            className="expense-trend__point"
+            key={point.label}
+            style={{ left: `${point.x}%`, top: `${point.y}%` }}
+          />
+        ))}
+      </div>
+      <div className="expense-trend__x-axis" aria-hidden="true">
+        {points.map((point) => (
+          <span key={point.label} style={{ left: `${point.x}%` }}>
+            {point.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function dateOnly(date: Date) {
@@ -378,7 +491,6 @@ function ExpenseStatisticsPage() {
   const comparisons = categoryComparison(currentExpenses, previousExpenses);
   const trend = trendData(expenses, period);
   const comparison = comparisonMessage(total, previousTotal, period);
-  const trendMax = Math.max(...trend.map((item) => item.amount), 1);
   const compareMax = Math.max(...comparisons.flatMap((item) => [item.current, item.previous]), 1);
   const hasComparisonData = comparisons.some((item) => item.current > 0 || item.previous > 0);
   const currentPeriodLabel = period === 'daily' ? '오늘' : '이번 달';
@@ -541,29 +653,7 @@ function ExpenseStatisticsPage() {
             </div>
             <small>오늘 기준</small>
           </div>
-          <div
-            className="expense-trend__chart"
-            role="img"
-            aria-label={trend.map((item) => `${item.label} ${formatWon(item.amount)}`).join(', ')}
-          >
-            {trend.map((item) => (
-              <div
-                className="expense-trend__item"
-                key={item.label}
-                title={`${item.label} ${formatWon(item.amount)}`}
-              >
-                <span>{item.amount > 0 ? compactWon(item.amount) : ''}</span>
-                <div>
-                  <i
-                    style={{
-                      height: `${Math.max(item.amount > 0 ? 7 : 0, (item.amount / trendMax) * 100)}%`,
-                    }}
-                  />
-                </div>
-                <small>{item.label}</small>
-              </div>
-            ))}
-          </div>
+          <ExpenseTrendChart items={trend} />
         </div>
       </section>
 

@@ -1,18 +1,12 @@
 import {
   AlertCircle,
-  Bus,
   CalendarDays,
   CircleCheck,
-  Coffee,
-  CreditCard,
   LoaderCircle,
   ReceiptText,
-  ShoppingBag,
-  Utensils,
   WalletCards,
-  type LucideIcon,
 } from 'lucide-react';
-import { type FormEvent, useMemo, useState } from 'react';
+import { type ComponentType, type FormEvent, useMemo, useState } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { createManualExpense } from '../api';
 import '../styles/expense-entry.css';
@@ -21,17 +15,52 @@ const maxExpenseAmount = 2_147_483_647;
 const earliestExpenseDate = '2024-01-01';
 const wonFormatter = new Intl.NumberFormat('ko-KR');
 
+type CategoryIconComponent = ComponentType<{ size?: number }>;
+
+function createMaterialCategoryIcon(path: string): CategoryIconComponent {
+  return function MaterialCategoryIcon({ size = 24 }) {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <path d={path} />
+      </svg>
+    );
+  };
+}
+
+const RestaurantIcon = createMaterialCategoryIcon(
+  'M16 6v6c0 1.1.9 2 2 2h1v7c0 .55.45 1 1 1s1-.45 1-1V3.13c0-.65-.61-1.13-1.24-.98C17.6 2.68 16 4.51 16 6zm-5 3H9V3c0-.55-.45-1-1-1s-1 .45-1 1v6H5V3c0-.55-.45-1-1-1s-1 .45-1 1v6c0 2.21 1.79 4 4 4v8c0 .55.45 1 1 1s1-.45 1-1v-8c2.21 0 4-1.79 4-4V3c0-.55-.45-1-1-1s-1 .45-1 1v6z',
+);
+const LocalCafeIcon = createMaterialCategoryIcon(
+  'M20 3H6c-1.1 0-2 .9-2 2v8c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 5h-2V5h2v3zM3 21h16c.55 0 1-.45 1-1s-.45-1-1-1H3c-.55 0-1 .45-1 1s.45 1 1 1z',
+);
+const DirectionsBusIcon = createMaterialCategoryIcon(
+  'M4 16c0 .88.39 1.67 1 2.22v1.28c0 .83.67 1.5 1.5 1.5S8 20.33 8 19.5V19h8v.5c0 .82.67 1.5 1.5 1.5.82 0 1.5-.67 1.5-1.5v-1.28c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z',
+);
+const ShoppingBagIcon = createMaterialCategoryIcon(
+  'M18 6h-2c0-2.21-1.79-4-4-4S8 3.79 8 6H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-8 4c0 .55-.45 1-1 1s-1-.45-1-1V8h2v2zm2-6c1.1 0 2 .9 2 2h-4c0-1.1.9-2 2-2zm4 6c0 .55-.45 1-1 1s-1-.45-1-1V8h2v2z',
+);
+const MoreHorizIcon = createMaterialCategoryIcon(
+  'M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z',
+);
+
 const categories: Array<{
   id: number;
   label: string;
-  icon: LucideIcon;
+  icon: CategoryIconComponent;
   tone: 'food' | 'cafe' | 'transport' | 'shopping' | 'etc';
 }> = [
-  { id: 1, label: '식비', icon: Utensils, tone: 'food' },
-  { id: 2, label: '카페', icon: Coffee, tone: 'cafe' },
-  { id: 3, label: '교통', icon: Bus, tone: 'transport' },
-  { id: 4, label: '쇼핑', icon: ShoppingBag, tone: 'shopping' },
-  { id: 5, label: '기타', icon: CreditCard, tone: 'etc' },
+  { id: 1, label: '식비', icon: RestaurantIcon, tone: 'food' },
+  { id: 2, label: '카페', icon: LocalCafeIcon, tone: 'cafe' },
+  { id: 3, label: '교통', icon: DirectionsBusIcon, tone: 'transport' },
+  { id: 4, label: '쇼핑', icon: ShoppingBagIcon, tone: 'shopping' },
+  { id: 5, label: '기타', icon: MoreHorizIcon, tone: 'etc' },
 ];
 
 interface FormErrors {
