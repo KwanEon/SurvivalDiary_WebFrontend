@@ -29,18 +29,17 @@ import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react
 import { Link } from 'wouter';
 import { useAuth } from '../../auth/AuthContext';
 import { getPolicyPreference, getPolicyRecommendations } from '../../policies/api';
-import type {
-  PolicyDetailNavigationState,
-  PolicySummary,
-} from '../../policies/types';
-import { getExpenses, getHomeSummary, saveTodayBudget } from '../api';
-import { budgetPresets, homeNews } from '../mocks';
-import type { DashboardLoadState, ExpenseSummary, HomeSummary } from '../types';
+import type { PolicyDetailNavigationState, PolicySummary } from '../../policies/types';
+import { getExpenses, getHomeSummary, getRecommendedNews, saveTodayBudget } from '../api';
+import { budgetPresets } from '../mocks';
+import type { DashboardLoadState, ExpenseSummary, HomeSummary, NewsRecommendation } from '../types';
 import '../styles/dashboard.css';
 
 const wonFormatter = new Intl.NumberFormat('ko-KR');
 const DAY_IN_MS = 86_400_000;
 const POLICIES_PER_PAGE = 3;
+const NEWS_PER_PAGE = 4;
+const NEWS_PREVIEW_SIZE = 20;
 
 const categoryMeta: Record<
   number,
@@ -57,6 +56,7 @@ const newsIcons: Record<string, LucideIcon> = {
   생활경제: ShoppingBag,
   금융: Landmark,
   절약: Lightbulb,
+  정책: Newspaper,
   트렌드: Sparkles,
 };
 
@@ -70,6 +70,22 @@ function clampPercent(value: number) {
 
 function errorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
+}
+
+function relativeTime(value: string) {
+  const publishedAt = new Date(value);
+  if (Number.isNaN(publishedAt.getTime())) return '발행일 확인 필요';
+  const elapsedMinutes = Math.max(0, Math.floor((Date.now() - publishedAt.getTime()) / 60_000));
+  if (elapsedMinutes < 1) return '방금 전';
+  if (elapsedMinutes < 60) return `${elapsedMinutes}분 전`;
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 24) return `${elapsedHours}시간 전`;
+  const elapsedDays = Math.floor(elapsedHours / 24);
+  if (elapsedDays < 7) return `${elapsedDays}일 전`;
+  return new Intl.DateTimeFormat('ko-KR', {
+    month: 'long',
+    day: 'numeric',
+  }).format(publishedAt);
 }
 
 function isToday(value: string) {
@@ -379,6 +395,11 @@ function DashboardPage() {
   const [policyError, setPolicyError] = useState('');
   const [policyReloadKey, setPolicyReloadKey] = useState(0);
   const [policyPageIndex, setPolicyPageIndex] = useState(0);
+  const [news, setNews] = useState<NewsRecommendation[]>([]);
+  const [newsState, setNewsState] = useState<'loading' | 'ready' | 'empty' | 'error'>('loading');
+  const [newsError, setNewsError] = useState('');
+  const [newsReloadKey, setNewsReloadKey] = useState(0);
+  const [newsPageIndex, setNewsPageIndex] = useState(0);
 
   const loadDashboard = useCallback(async (signal?: AbortSignal, background = false) => {
     if (background) setRefreshing(true);
@@ -439,6 +460,25 @@ function DashboardPage() {
     return () => controller.abort();
   }, [policyReloadKey]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    setNewsState('loading');
+    setNewsError('');
+    void getRecommendedNews(NEWS_PREVIEW_SIZE, controller.signal)
+      .then((items) => {
+        if (controller.signal.aborted) return;
+        setNews(items);
+        setNewsPageIndex(0);
+        setNewsState(items.length ? 'ready' : 'empty');
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        setNewsError(errorMessage(error, '맞춤 뉴스를 불러오지 못했어요.'));
+        setNewsState('error');
+      });
+    return () => controller.abort();
+  }, [newsReloadKey]);
+
   const weeklyProgress = summary?.weeklyBudget
     ? clampPercent((summary.weeklySpent / summary.weeklyBudget) * 100)
     : 0;
@@ -452,15 +492,17 @@ function DashboardPage() {
   const TopCategoryIcon = topCategory?.icon ?? CreditCard;
   const policyPages = useMemo(
     () =>
-      Array.from(
-        { length: Math.ceil(policies.length / POLICIES_PER_PAGE) },
-        (_, index) =>
-          policies.slice(
-            index * POLICIES_PER_PAGE,
-            (index + 1) * POLICIES_PER_PAGE,
-          ),
+      Array.from({ length: Math.ceil(policies.length / POLICIES_PER_PAGE) }, (_, index) =>
+        policies.slice(index * POLICIES_PER_PAGE, (index + 1) * POLICIES_PER_PAGE),
       ),
     [policies],
+  );
+  const newsPages = useMemo(
+    () =>
+      Array.from({ length: Math.ceil(news.length / NEWS_PER_PAGE) }, (_, index) =>
+        news.slice(index * NEWS_PER_PAGE, (index + 1) * NEWS_PER_PAGE),
+      ),
+    [news],
   );
 
   const summaryTiles = useMemo(
@@ -544,6 +586,7 @@ function DashboardPage() {
           onClick={() => {
             void loadDashboard(undefined, true);
             setPolicyReloadKey((key) => key + 1);
+            setNewsReloadKey((key) => key + 1);
           }}
         >
           <RefreshCw className={refreshing ? 'spin' : ''} size={17} />
@@ -754,9 +797,7 @@ function DashboardPage() {
                         tabIndex={pageIndex === policyPageIndex ? undefined : -1}
                       >
                         <div className="dashboard-policy-card__tags">
-                          {policy.recommendationStatus === 'RECOMMENDED' && (
-                            <span>맞춤 추천</span>
-                          )}
+                          {policy.recommendationStatus === 'RECOMMENDED' && <span>맞춤 추천</span>}
                           {deadline && <span className="is-deadline">{deadline}</span>}
                           <span className="is-category">{policy.category}</span>
                         </div>
@@ -838,32 +879,107 @@ function DashboardPage() {
           <div>
             <span>For your wallet</span>
             <h2 id="dashboard-news-title">맞춤 뉴스</h2>
-            <p>지갑을 지키는 생활경제 소식을 모았어요.</p>
+            <p>선택한 관심사와 가까운 최신 기사를 모았어요.</p>
           </div>
-          <Newspaper size={22} aria-hidden="true" />
-        </div>
-        <div className="dashboard-news__list">
-          {homeNews.map((news) => {
-            const Icon = newsIcons[news.category] ?? Newspaper;
-            return (
-              <article className="dashboard-news-item" key={news.id}>
-                <span
-                  className={`dashboard-news-item__icon dashboard-news-item__icon--${news.category}`}
+          <div className="dashboard-section-heading__actions">
+            {newsState === 'ready' && newsPages.length > 1 && (
+              <div className="dashboard-news__pagination" aria-label="맞춤 뉴스 페이지 이동">
+                <button
+                  type="button"
+                  aria-label="이전 뉴스 페이지"
+                  disabled={newsPageIndex === 0}
+                  onClick={() => setNewsPageIndex((index) => Math.max(0, index - 1))}
                 >
-                  <Icon size={21} />
+                  <ChevronLeft size={18} />
+                </button>
+                <span aria-live="polite">
+                  {newsPageIndex + 1} / {newsPages.length}
                 </span>
-                <div>
-                  <span>{news.category}</span>
-                  <h3>{news.title}</h3>
-                  <small>
-                    {news.source} · {news.timeAgo}
-                  </small>
-                </div>
-                <ArrowRight size={17} aria-hidden="true" />
-              </article>
-            );
-          })}
+                <button
+                  type="button"
+                  aria-label="다음 뉴스 페이지"
+                  disabled={newsPageIndex === newsPages.length - 1}
+                  onClick={() =>
+                    setNewsPageIndex((index) => Math.min(newsPages.length - 1, index + 1))
+                  }
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            )}
+            <Newspaper size={22} aria-hidden="true" />
+          </div>
         </div>
+        {newsState === 'loading' ? (
+          <div className="dashboard-news-state" aria-busy="true">
+            <LoaderCircle className="spin" size={20} />
+            <span>관심사에 맞는 뉴스를 고르고 있어요.</span>
+          </div>
+        ) : newsState === 'error' ? (
+          <div className="dashboard-news-state dashboard-news-state--error" role="alert">
+            <AlertTriangle size={20} />
+            <div>
+              <strong>맞춤 뉴스를 불러오지 못했어요</strong>
+              <p>{newsError}</p>
+            </div>
+            <button type="button" onClick={() => setNewsReloadKey((key) => key + 1)}>
+              다시 시도
+            </button>
+          </div>
+        ) : newsState === 'empty' ? (
+          <div className="dashboard-news-state">
+            <Newspaper size={20} />
+            <span>지금 추천할 수 있는 뉴스가 없어요.</span>
+          </div>
+        ) : (
+          <div className="dashboard-news__viewport">
+            <div
+              className="dashboard-news__track"
+              style={{ transform: `translateX(-${newsPageIndex * 100}%)` }}
+            >
+              {newsPages.map((page, pageIndex) => (
+                <div
+                  className="dashboard-news__list"
+                  aria-hidden={pageIndex !== newsPageIndex}
+                  key={page[0]?.newsId ?? pageIndex}
+                >
+                  {page.map((item) => {
+                    const Icon = newsIcons[item.category] ?? Newspaper;
+                    return (
+                      <a
+                        className="dashboard-news-item"
+                        href={item.sourceUrl}
+                        key={item.newsId}
+                        target="_blank"
+                        rel="noreferrer"
+                        tabIndex={pageIndex === newsPageIndex ? undefined : -1}
+                      >
+                        <span
+                          className={`dashboard-news-item__icon dashboard-news-item__icon--${item.category}`}
+                        >
+                          <Icon size={21} />
+                        </span>
+                        <div>
+                          <span
+                            className={`dashboard-news-item__category dashboard-news-item__category--${item.category}`}
+                          >
+                            {item.category}
+                          </span>
+                          <h3>{item.title}</h3>
+                          <p className="dashboard-news-item__summary">{item.summary}</p>
+                          <small>
+                            {item.source} · {relativeTime(item.publishedAt)}
+                          </small>
+                        </div>
+                        <ArrowRight size={17} aria-hidden="true" />
+                      </a>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {budgetOpen && (

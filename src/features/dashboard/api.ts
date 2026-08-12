@@ -1,5 +1,10 @@
 import { apiRequest } from '../auth';
-import type { BudgetResponse, ExpenseSummary, HomeSummary } from './types';
+import type {
+  BudgetResponse,
+  ExpenseSummary,
+  HomeSummary,
+  NewsRecommendation,
+} from './types';
 
 export function getHomeSummary(signal?: AbortSignal) {
   return apiRequest<HomeSummary>('/home/summary', {
@@ -10,6 +15,13 @@ export function getHomeSummary(signal?: AbortSignal) {
 
 export function getExpenses(signal?: AbortSignal) {
   return apiRequest<ExpenseSummary[]>('/expenses', {
+    headers: { 'Cache-Control': 'no-cache' },
+    signal,
+  });
+}
+
+export function getRecommendedNews(size = 20, signal?: AbortSignal) {
+  return apiRequest<NewsRecommendation[]>(`/news/recommendations?size=${size}`, {
     headers: { 'Cache-Control': 'no-cache' },
     signal,
   });
