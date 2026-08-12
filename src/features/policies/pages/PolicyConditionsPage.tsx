@@ -7,7 +7,6 @@ import { isAbortError, policyErrorMessage } from '../errors';
 import {
   EDUCATION_LEVEL_OPTIONS,
   ENROLLMENT_STATUS_OPTIONS,
-  getPreferredPolicyCategory,
   getDistrictOptions,
   POLICY_INTEREST_OPTIONS,
   REGION_OPTIONS,
@@ -167,16 +166,8 @@ function PolicyConditionsPage() {
 
     setIsSaving(true);
     try {
-      const savedPreference = await savePolicyPreference(input);
-      const preferredCategory = getPreferredPolicyCategory(
-        savedPreference.interests ?? input.interests,
-      );
-      navigate(
-        preferredCategory
-          ? `/policies?category=${encodeURIComponent(preferredCategory)}`
-          : '/policies',
-        { replace: true },
-      );
+      await savePolicyPreference(input);
+      navigate('/policies', { replace: true });
     } catch (error) {
       setSaveError(policyErrorMessage(error, '정책 조건을 저장하지 못했습니다.'));
     } finally {
