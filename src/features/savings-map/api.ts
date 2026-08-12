@@ -7,6 +7,7 @@ import type {
   MapRegion,
   PageResponse,
   PublicFacility,
+  PublicParkingLot,
 } from './types';
 
 export interface MapLocationSearchResult {
@@ -73,7 +74,7 @@ export async function fetchGoodPriceStores(
     signal,
     60_000,
   );
-  return page.content.map((raw, index) => {
+  return page.content.map((raw) => {
     const item = objectValue(raw);
     const menus = Array.from({ length: 4 }, (_, menuIndex) => ({
       name: stringValue(item[`menu${menuIndex + 1}`]),
@@ -84,7 +85,7 @@ export async function fetchGoodPriceStores(
     const name = stringValue(item.name);
     const address = stringValue(item.address);
     return {
-      id: `${itemProvince}|${itemDistrict}|${name}|${address}|${index}`,
+      id: `${itemProvince}|${itemDistrict}|${name}|${address}`,
       province: itemProvince,
       district: itemDistrict,
       category: stringValue(item.category),
@@ -137,11 +138,11 @@ export async function fetchPublicFacilities(
     signal,
     60_000,
   );
-  return page.content.map((raw, index) => {
+  return page.content.map((raw) => {
     const item = objectValue(raw);
     const name = stringValue(item.name);
     return {
-      id: stringValue(item.id) || `${name}|${stringValue(item.address)}|${index}`,
+      id: stringValue(item.id) || `${name}|${stringValue(item.address)}`,
       name,
       locationName: stringValue(item.locationName),
       category: stringValue(item.category),
@@ -168,6 +169,63 @@ export async function fetchPublicFacilities(
   });
 }
 
+export async function fetchPublicParkingLots(
+  bounds: MapBounds,
+  latitude: number,
+  longitude: number,
+  freeOnly: boolean,
+  signal: AbortSignal,
+): Promise<PublicParkingLot[]> {
+  const query = new URLSearchParams({
+    page: '0',
+    size: '100',
+    southWestLat: String(bounds.southWestLat),
+    southWestLng: String(bounds.southWestLng),
+    northEastLat: String(bounds.northEastLat),
+    northEastLng: String(bounds.northEastLng),
+    latitude: String(latitude),
+    longitude: String(longitude),
+    freeOnly: String(freeOnly),
+    sort: 'distance',
+  });
+  const page = await mapRequest<PageResponse<unknown>>(
+    `/map/public-parking?${query}`,
+    signal,
+    60_000,
+  );
+  return page.content.map((raw) => {
+    const item = objectValue(raw);
+    const name = stringValue(item.name);
+    return {
+      id: stringValue(item.id) || `${name}|${stringValue(item.address)}`,
+      name,
+      parkingType: stringValue(item.parkingType),
+      address: stringValue(item.address),
+      phone: stringValue(item.phone),
+      latitude: validLatitude(item.latitude),
+      longitude: validLongitude(item.longitude),
+      distanceMeters: integerValue(item.distanceMeters),
+      free: booleanValue(item.free) ?? false,
+      capacity: integerValue(item.capacity),
+      operationDays: stringValue(item.operationDays),
+      weekdayHours: stringValue(item.weekdayHours),
+      saturdayHours: stringValue(item.saturdayHours),
+      holidayHours: stringValue(item.holidayHours),
+      basicMinutes: integerValue(item.basicMinutes),
+      basicFee: integerValue(item.basicFee),
+      additionalMinutes: integerValue(item.additionalMinutes),
+      additionalFee: integerValue(item.additionalFee),
+      dailyFee: integerValue(item.dailyFee),
+      monthlyFee: integerValue(item.monthlyFee),
+      paymentMethods: stringValue(item.paymentMethods),
+      notes: stringValue(item.notes),
+      institution: stringValue(item.institution),
+      accessibleParking: booleanValue(item.accessibleParking) ?? false,
+      referenceDate: stringValue(item.referenceDate),
+    };
+  });
+}
+
 export async function fetchHousingRentDeals(
   lawdCode: string,
   region: string,
@@ -189,10 +247,12 @@ export async function fetchHousingRentDeals(
     northEastLng: String(bounds.northEastLng),
   });
   const response = await mapRequest<unknown[]>(`/map/housing-rent-deals?${query}`, signal, 60_000);
-  return response.map((raw, index) => {
+  return response.map((raw) => {
     const item = objectValue(raw);
     return {
-      id: stringValue(item.id) || `${stringValue(item.propertyName)}|${index}`,
+      id:
+        stringValue(item.id) ||
+        `${stringValue(item.propertyName)}|${stringValue(item.contractDate)}|${stringValue(item.neighborhood)}|${stringValue(item.lotNumber)}|${stringValue(item.floor)}`,
       propertyType: stringValue(item.propertyType),
       propertyName: stringValue(item.propertyName),
       dealType: stringValue(item.dealType),

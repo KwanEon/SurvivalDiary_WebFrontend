@@ -3,6 +3,7 @@ import {
   Bookmark,
   BookmarkCheck,
   Building,
+  Car,
   Clock3,
   Home,
   LocateFixed,
@@ -22,7 +23,9 @@ import {
   fetchMapLocationSearch,
   fetchMapRegion,
   fetchPublicFacilities,
+  fetchPublicParkingLots,
 } from '../api';
+import { favoriteKey, loadMapFavorites, saveMapFavorites } from '../favorites';
 import {
   loadNaverMaps,
   type NaverEventListener,
@@ -40,6 +43,7 @@ import type {
   MapCategory,
   MapRegion,
   PublicFacility,
+  PublicParkingLot,
   SelectedMapItem,
 } from '../types';
 import '../styles/savings-map.css';
@@ -53,6 +57,7 @@ const CATEGORY_OPTIONS: { value: MapCategory; label: string }[] = [
   { value: 'favorites', label: 'MY' },
   { value: 'good-price', label: '착한가격업소' },
   { value: 'public-facility', label: '공공시설' },
+  { value: 'public-parking', label: '공영주차장' },
   { value: 'housing', label: '주거지' },
 ];
 
@@ -98,13 +103,15 @@ function SavingsMapPage() {
   const defaultResidenceAddressRef = useRef<AddressMatch | null>(null);
   const recentAddressRef = useRef<AddressMatch | null>(null);
 
-  const [category, setCategory] = useState<MapCategory>('good-price');
+  const [category, setCategory] = useState<MapCategory>('favorites');
   const [goodPriceCategory, setGoodPriceCategory] = useState('all');
-  const [freeOnly, setFreeOnly] = useState(false);
+  const [facilityFreeOnly, setFacilityFreeOnly] = useState(false);
+  const [parkingFreeOnly, setParkingFreeOnly] = useState(false);
   const [goodPriceStores, setGoodPriceStores] = useState<GoodPriceStore[]>([]);
   const [publicFacilities, setPublicFacilities] = useState<PublicFacility[]>([]);
+  const [parkingLots, setParkingLots] = useState<PublicParkingLot[]>([]);
   const [housingDeals, setHousingDeals] = useState<HousingRentDeal[]>([]);
-  const [favorites, setFavorites] = useState<Map<string, GoodPriceStore>>(() => new Map());
+  const [favorites, setFavorites] = useState<Map<string, SelectedMapItem>>(loadMapFavorites);
   const [selected, setSelected] = useState<SelectedMapItem | null>(null);
   const [region, setRegion] = useState<MapRegion | null>(null);
   const [viewportBounds, setViewportBounds] = useState<MapBounds | null>(null);
@@ -227,7 +234,7 @@ function SavingsMapPage() {
       };
       const requestKey = [
         category,
-        freeOnly,
+        category === 'public-parking' ? parkingFreeOnly : facilityFreeOnly,
         nextBounds.southWestLat.toFixed(4),
         nextBounds.southWestLng.toFixed(4),
         nextBounds.northEastLat.toFixed(4),
@@ -261,11 +268,23 @@ function SavingsMapPage() {
             nextBounds,
             nextCenter.latitude,
             nextCenter.longitude,
-            freeOnly,
+            facilityFreeOnly,
             controller.signal,
           );
           if (requestId !== requestIdRef.current) return;
           setPublicFacilities(facilities);
+          return;
+        }
+        if (category === 'public-parking') {
+          const lots = await fetchPublicParkingLots(
+            nextBounds,
+            nextCenter.latitude,
+            nextCenter.longitude,
+            parkingFreeOnly,
+            controller.signal,
+          );
+          if (requestId !== requestIdRef.current) return;
+          setParkingLots(lots);
           return;
         }
 
@@ -314,12 +333,13 @@ function SavingsMapPage() {
         setDataError(errorMessage(error));
         if (category === 'good-price') setGoodPriceStores([]);
         if (category === 'public-facility') setPublicFacilities([]);
+        if (category === 'public-parking') setParkingLots([]);
         if (category === 'housing') setHousingDeals([]);
       } finally {
         if (requestId === requestIdRef.current) setDataLoading(false);
       }
     },
-    [category, freeOnly],
+    [category, facilityFreeOnly, parkingFreeOnly],
   );
 
   refreshViewportRef.current = refreshViewport;
@@ -487,13 +507,19 @@ function SavingsMapPage() {
   const visibleFavorites = useMemo(
     () =>
       [...favorites.values()]
-        .filter(hasCoordinates)
-        .filter((store) => inBounds(store, viewportBounds))
+        .filter((item) => hasCoordinates(item.value))
         .sort(
           (left, right) =>
-            distanceMeters(viewportCenter, left) - distanceMeters(viewportCenter, right),
+            distanceMeters(viewportCenter, {
+              latitude: left.value.latitude!,
+              longitude: left.value.longitude!,
+            }) -
+            distanceMeters(viewportCenter, {
+              latitude: right.value.latitude!,
+              longitude: right.value.longitude!,
+            }),
         ),
-    [favorites, viewportBounds, viewportCenter],
+    [favorites, viewportCenter],
   );
 
   const visiblePublicFacilities = useMemo(
@@ -508,6 +534,18 @@ function SavingsMapPage() {
     [publicFacilities, viewportBounds, viewportCenter],
   );
 
+  const visibleParkingLots = useMemo(
+    () =>
+      parkingLots
+        .filter(hasCoordinates)
+        .filter((lot) => inBounds(lot, viewportBounds))
+        .sort(
+          (left, right) =>
+            distanceMeters(viewportCenter, left) - distanceMeters(viewportCenter, right),
+        ),
+    [parkingLots, viewportBounds, viewportCenter],
+  );
+
   const visibleHousingDeals = useMemo(
     () => housingDeals.filter(hasCoordinates).filter((deal) => inBounds(deal, viewportBounds)),
     [housingDeals, viewportBounds],
@@ -515,13 +553,16 @@ function SavingsMapPage() {
 
   const markerItems = useMemo<SelectedMapItem[]>(() => {
     if (category === 'favorites') {
-      return visibleFavorites.map((value) => ({ kind: 'good-price', value }));
+      return visibleFavorites;
     }
     if (category === 'good-price') {
       return filteredGoodPriceStores.map((value) => ({ kind: 'good-price', value }));
     }
     if (category === 'public-facility') {
       return visiblePublicFacilities.map((value) => ({ kind: 'public-facility', value }));
+    }
+    if (category === 'public-parking') {
+      return visibleParkingLots.map((value) => ({ kind: 'public-parking', value }));
     }
     const uniqueDeals = new Map<string, HousingRentDeal>();
     for (const deal of visibleHousingDeals) {
@@ -533,6 +574,7 @@ function SavingsMapPage() {
     filteredGoodPriceStores,
     visibleFavorites,
     visibleHousingDeals,
+    visibleParkingLots,
     visiblePublicFacilities,
   ]);
 
@@ -547,6 +589,8 @@ function SavingsMapPage() {
       const goodPriceClass =
         item.kind === 'good-price' ? ' savings-map__sdk-marker--good-price' : '';
       const housingClass = item.kind === 'housing' ? ' savings-map__sdk-marker--housing' : '';
+      const parkingClass =
+        item.kind === 'public-parking' ? ' savings-map__sdk-marker--parking' : '';
       const selectedClass =
         selected && selected.kind === item.kind && selected.value.id === id
           ? ' savings-map__sdk-marker--selected'
@@ -555,7 +599,7 @@ function SavingsMapPage() {
         map,
         position: new maps.LatLng(latitude, longitude),
         icon: {
-          content: `<button type="button" class="savings-map__sdk-marker savings-map__sdk-marker--${tone}${goodPriceClass}${housingClass}${selectedClass}" aria-label="${escapeHtml(label)}"><span>${escapeHtml(glyph)}</span></button>`,
+          content: `<button type="button" class="savings-map__sdk-marker savings-map__sdk-marker--${tone}${goodPriceClass}${housingClass}${parkingClass}${selectedClass}" aria-label="${escapeHtml(label)}"><span>${escapeHtml(glyph)}</span></button>`,
           anchor:
             item.kind === 'good-price'
               ? new maps.Point(17, 38)
@@ -611,16 +655,20 @@ function SavingsMapPage() {
     window.setTimeout(() => void refreshViewportRef.current(true), 0);
   };
 
-  const toggleFavorite = (store: GoodPriceStore) => {
+  const toggleFavorite = (item: SelectedMapItem) => {
+    const key = favoriteKey(item);
+    const removing = favorites.has(key);
     setFavorites((current) => {
       const next = new Map(current);
-      if (next.has(store.id)) next.delete(store.id);
-      else next.set(store.id, store);
+      if (next.has(key)) next.delete(key);
+      else next.set(key, item);
+      saveMapFavorites(next);
       return next;
     });
+    if (removing && category === 'favorites') setSelected(null);
   };
 
-  const openDirections = async (item: GoodPriceStore | PublicFacility) => {
+  const openDirections = async (item: GoodPriceStore | PublicFacility | PublicParkingLot) => {
     if (item.latitude === null || item.longitude === null) {
       setDataError('이 장소는 위치 정보가 없어 길찾기를 시작할 수 없어요.');
       return;
@@ -774,14 +822,17 @@ function SavingsMapPage() {
           ))}
         </div>
         <div className="savings-map__filter-tools">
-          {category === 'public-facility' && (
+          {(category === 'public-facility' || category === 'public-parking') && (
             <label className="savings-map__free-filter">
               <input
                 type="checkbox"
-                checked={freeOnly}
-                onChange={(event) => setFreeOnly(event.target.checked)}
+                checked={category === 'public-parking' ? parkingFreeOnly : facilityFreeOnly}
+                onChange={(event) => {
+                  if (category === 'public-parking') setParkingFreeOnly(event.target.checked);
+                  else setFacilityFreeOnly(event.target.checked);
+                }}
               />
-              무료 시설만
+              {category === 'public-parking' ? '무료 주차장만' : '무료 시설만'}
             </label>
           )}
           <button
@@ -941,7 +992,7 @@ function SavingsMapPage() {
             <SelectedItemPanel
               item={selected}
               currentPosition={viewportCenter}
-              favorite={selected.kind === 'good-price' && favorites.has(selected.value.id)}
+              favorite={favorites.has(favoriteKey(selected))}
               onFavorite={toggleFavorite}
               onDirections={openDirections}
               onClose={() => setSelected(null)}
@@ -953,6 +1004,7 @@ function SavingsMapPage() {
               favorites={visibleFavorites}
               goodPriceStores={filteredGoodPriceStores}
               facilities={visiblePublicFacilities}
+              parkingLots={visibleParkingLots}
               housingDeals={visibleHousingDeals}
               loading={dataLoading}
               error={dataError}
@@ -971,6 +1023,10 @@ function SavingsMapPage() {
         <span>
           <i className="savings-map__legend-dot savings-map__legend-dot--teal" />
           공공시설
+        </span>
+        <span>
+          <i className="savings-map__legend-dot savings-map__legend-dot--purple" />
+          공영주차장
         </span>
         <span>
           <i className="savings-map__legend-dot savings-map__legend-dot--orange" />
@@ -1002,9 +1058,10 @@ function MapState({ message, loading = false }: { message: string; loading?: boo
 interface OverviewPanelProps {
   category: MapCategory;
   region: MapRegion | null;
-  favorites: GoodPriceStore[];
+  favorites: SelectedMapItem[];
   goodPriceStores: GoodPriceStore[];
   facilities: PublicFacility[];
+  parkingLots: PublicParkingLot[];
   housingDeals: HousingRentDeal[];
   loading: boolean;
   error: string | null;
@@ -1021,7 +1078,9 @@ function OverviewPanel(props: OverviewPanelProps) {
         ? props.goodPriceStores.length
         : category === 'public-facility'
           ? props.facilities.length
-          : props.housingDeals.length;
+          : category === 'public-parking'
+            ? props.parkingLots.length
+            : props.housingDeals.length;
   const title = CATEGORY_OPTIONS.find((option) => option.value === category)?.label ?? '지도';
 
   return (
@@ -1029,7 +1088,7 @@ function OverviewPanel(props: OverviewPanelProps) {
       <div className="savings-map-overview__heading">
         <div>
           <span className="status-badge">{title}</span>
-          <h2>{category === 'favorites' ? '저장한 착한가격업소' : '현재 지도 화면'}</h2>
+          <h2>{category === 'favorites' ? '찜한 장소' : '현재 지도 화면'}</h2>
         </div>
         <strong>
           {itemCount}
@@ -1038,12 +1097,14 @@ function OverviewPanel(props: OverviewPanelProps) {
       </div>
       <p className="savings-map-overview__region">
         {category === 'favorites'
-          ? '착한가격업소에서 저장한 장소를 모아 보여드려요.'
+          ? '네 가지 지도 카테고리에서 찜한 장소를 모아 보여드려요.'
           : category === 'public-facility'
             ? '현재 지도 영역의 시설을 거리순으로 보여드려요.'
-            : region
-              ? regionLabel(region)
-              : '현재 지도 화면의 지역을 확인하고 있어요.'}
+            : category === 'public-parking'
+              ? '현재 지도 영역의 공영주차장을 거리순으로 보여드려요.'
+              : region
+                ? regionLabel(region)
+                : '현재 지도 화면의 지역을 확인하고 있어요.'}
       </p>
       {loading && itemCount === 0 ? (
         <MapState message="지도 데이터를 준비하고 있어요." loading />
@@ -1060,9 +1121,21 @@ function OverviewPanel(props: OverviewPanelProps) {
           <strong>{emptyMessage(category)}</strong>
           <span>
             {category === 'favorites'
-              ? '착한가격업소 마커를 눌러 저장할 수 있어요.'
+              ? '각 카테고리의 마커를 눌러 찜할 수 있어요.'
               : '지도를 이동하거나 범위를 넓혀 보세요.'}
           </span>
+        </div>
+      ) : category === 'favorites' ? (
+        <div className="savings-map-overview__list">
+          {props.favorites.map((item) => (
+            <button type="button" onClick={() => onSelect(item)} key={favoriteKey(item)}>
+              {itemIcon(item)}
+              <span>
+                <strong>{itemTitle(item)}</strong>
+                <small>{itemSubtitle(item)}</small>
+              </span>
+            </button>
+          ))}
         </div>
       ) : category === 'public-facility' ? (
         <div className="savings-map-overview__list">
@@ -1077,6 +1150,24 @@ function OverviewPanel(props: OverviewPanelProps) {
                 <strong>{facility.name}</strong>
                 <small>
                   {facility.category} · {distanceLabel(facility.distanceMeters)}
+                </small>
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : category === 'public-parking' ? (
+        <div className="savings-map-overview__list">
+          {props.parkingLots.map((lot) => (
+            <button
+              type="button"
+              onClick={() => onSelect({ kind: 'public-parking', value: lot })}
+              key={lot.id}
+            >
+              <Car size={17} />
+              <span>
+                <strong>{lot.name}</strong>
+                <small>
+                  {parkingFeeLabel(lot)} · {distanceLabel(lot.distanceMeters)}
                 </small>
               </span>
             </button>
@@ -1108,7 +1199,7 @@ function OverviewPanel(props: OverviewPanelProps) {
         </div>
       ) : (
         <div className="savings-map-overview__list">
-          {(category === 'favorites' ? props.favorites : props.goodPriceStores).map((store) => (
+          {props.goodPriceStores.map((store) => (
             <button
               type="button"
               onClick={() => onSelect({ kind: 'good-price', value: store })}
@@ -1151,8 +1242,8 @@ interface SelectedItemPanelProps {
   item: SelectedMapItem;
   currentPosition: Coordinates;
   favorite: boolean;
-  onFavorite: (store: GoodPriceStore) => void;
-  onDirections: (item: GoodPriceStore | PublicFacility) => Promise<void>;
+  onFavorite: (item: SelectedMapItem) => void;
+  onDirections: (item: GoodPriceStore | PublicFacility | PublicParkingLot) => Promise<void>;
   onClose: () => void;
 }
 
@@ -1201,7 +1292,7 @@ function SelectedItemPanel(props: SelectedItemPanelProps) {
           <button
             className="button button--secondary"
             type="button"
-            onClick={() => props.onFavorite(store)}
+            onClick={() => props.onFavorite(item)}
           >
             {props.favorite ? <BookmarkCheck size={15} /> : <Bookmark size={15} />}
             {props.favorite ? '저장됨' : '저장'}
@@ -1273,7 +1364,15 @@ function SelectedItemPanel(props: SelectedItemPanelProps) {
         {facility.phone && (
           <DetailRow icon={<Clock3 size={15} />} label="전화" value={facility.phone} />
         )}
-        <div className="savings-map-place__actions savings-map-place__actions--single">
+        <div className="savings-map-place__actions">
+          <button
+            className="button button--secondary"
+            type="button"
+            onClick={() => props.onFavorite(item)}
+          >
+            {props.favorite ? <BookmarkCheck size={15} /> : <Bookmark size={15} />}
+            {props.favorite ? '찜 해제' : '찜하기'}
+          </button>
           <button
             className="button button--primary"
             type="button"
@@ -1281,6 +1380,81 @@ function SelectedItemPanel(props: SelectedItemPanelProps) {
           >
             <Navigation size={15} />
             도보 길찾기
+          </button>
+        </div>
+      </DetailShell>
+    );
+  }
+
+  if (item.kind === 'public-parking') {
+    const lot = item.value;
+    const hours = [
+      lot.weekdayHours && `평일 ${lot.weekdayHours}`,
+      lot.saturdayHours && `토요일 ${lot.saturdayHours}`,
+      lot.holidayHours && `공휴일 ${lot.holidayHours}`,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+    return (
+      <DetailShell
+        title={lot.name}
+        badge={`공영 · ${lot.parkingType || '주차장'}`}
+        icon={<Car size={34} />}
+        onClose={onClose}
+      >
+        <div className="savings-map-place__tags">
+          <span>{parkingFeeLabel(lot)}</span>
+          <span>{distanceLabel(lot.distanceMeters)}</span>
+          {lot.capacity !== null && <span>{lot.capacity}면</span>}
+        </div>
+        <DetailRow
+          icon={<MapPin size={15} />}
+          label="주소"
+          value={lot.address || '주소 정보 없음'}
+        />
+        <DetailRow
+          icon={<Clock3 size={15} />}
+          label="운영시간"
+          value={hours || '운영시간 정보 없음'}
+        />
+        {lot.operationDays && (
+          <DetailRow icon={<Clock3 size={15} />} label="운영일" value={lot.operationDays} />
+        )}
+        {lot.additionalFee !== null && lot.additionalMinutes !== null && (
+          <DetailRow
+            icon={<Banknote size={15} />}
+            label="추가요금"
+            value={`${lot.additionalMinutes}분당 ${lot.additionalFee.toLocaleString('ko-KR')}원`}
+          />
+        )}
+        {lot.dailyFee !== null && (
+          <DetailRow
+            icon={<Banknote size={15} />}
+            label="일 주차"
+            value={`${lot.dailyFee.toLocaleString('ko-KR')}원`}
+          />
+        )}
+        {lot.paymentMethods && (
+          <DetailRow icon={<Banknote size={15} />} label="결제방법" value={lot.paymentMethods} />
+        )}
+        {lot.phone && <DetailRow icon={<Clock3 size={15} />} label="전화" value={lot.phone} />}
+        {lot.notes && <p className="savings-map-place__notice">{lot.notes}</p>}
+        <div className="savings-map-place__actions">
+          <button
+            className="button button--secondary"
+            type="button"
+            onClick={() => props.onFavorite(item)}
+          >
+            {props.favorite ? <BookmarkCheck size={15} /> : <Bookmark size={15} />}
+            {props.favorite ? '찜 해제' : '찜하기'}
+          </button>
+          <button
+            className="button button--primary"
+            type="button"
+            onClick={() => void props.onDirections(lot)}
+          >
+            <Navigation size={15} />
+            자동차 길찾기
           </button>
         </div>
       </DetailShell>
@@ -1329,6 +1503,16 @@ function SelectedItemPanel(props: SelectedItemPanelProps) {
         </p>
       )}
       <p className="savings-map-place__source">출처: 국토교통부 전월세 실거래가 자료</p>
+      <div className="savings-map-place__actions savings-map-place__actions--single">
+        <button
+          className="button button--secondary"
+          type="button"
+          onClick={() => props.onFavorite(item)}
+        >
+          {props.favorite ? <BookmarkCheck size={15} /> : <Bookmark size={15} />}
+          {props.favorite ? '찜 해제' : '찜하기'}
+        </button>
+      </div>
     </DetailShell>
   );
 }
@@ -1571,6 +1755,18 @@ function markerPresentation(item: SelectedMapItem) {
       glyph: '공',
     };
   }
+  if (item.kind === 'public-parking') {
+    const value = item.value;
+    if (!hasCoordinates(value)) throw new Error('좌표가 없는 마커입니다.');
+    return {
+      id: value.id,
+      label: `${value.name}, ${parkingFeeLabel(value)}`,
+      latitude: value.latitude,
+      longitude: value.longitude,
+      tone: 'purple',
+      glyph: 'P',
+    };
+  }
   const value = item.value;
   if (!hasCoordinates(value)) throw new Error('좌표가 없는 마커입니다.');
   return {
@@ -1663,6 +1859,44 @@ function feeLabel(facility: PublicFacility) {
   return value.includes('원') || !/\d/.test(value) ? value : `${value}원`;
 }
 
+function parkingFeeLabel(lot: PublicParkingLot) {
+  if (lot.free) return '무료';
+  if (
+    lot.basicMinutes === null ||
+    lot.basicMinutes <= 0 ||
+    lot.basicFee === null ||
+    lot.basicFee < 0
+  ) {
+    return '요금 정보 없음';
+  }
+  return `${lot.basicMinutes}분 ${lot.basicFee.toLocaleString('ko-KR')}원`;
+}
+
+function itemTitle(item: SelectedMapItem) {
+  if (item.kind === 'good-price') return item.value.name;
+  if (item.kind === 'public-facility') return item.value.name;
+  if (item.kind === 'public-parking') return item.value.name;
+  return item.value.propertyName || item.value.neighborhood;
+}
+
+function itemSubtitle(item: SelectedMapItem) {
+  if (item.kind === 'good-price') return `${item.value.category} · ${item.value.address}`;
+  if (item.kind === 'public-facility') {
+    return `${item.value.category} · ${feeLabel(item.value)}`;
+  }
+  if (item.kind === 'public-parking') {
+    return `공영주차장 · ${parkingFeeLabel(item.value)}`;
+  }
+  return `${item.value.propertyType} · ${housingPriceLabel(item.value)}`;
+}
+
+function itemIcon(item: SelectedMapItem) {
+  if (item.kind === 'good-price') return <Store size={17} />;
+  if (item.kind === 'public-facility') return <Building size={17} />;
+  if (item.kind === 'public-parking') return <Car size={17} />;
+  return <Home size={17} />;
+}
+
 function housingPriceLabel(deal: HousingRentDeal) {
   const deposit = `${deal.depositTenThousandWon.toLocaleString('ko-KR')}만원`;
   return deal.dealType === '월세'
@@ -1675,9 +1909,10 @@ function regionLabel(region: MapRegion) {
 }
 
 function emptyMessage(category: MapCategory) {
-  if (category === 'favorites') return '저장한 착한가격업소가 없어요.';
+  if (category === 'favorites') return '아직 찜한 장소가 없어요.';
   if (category === 'good-price') return '현재 지도 화면에 확인된 업소가 없어요.';
   if (category === 'public-facility') return '현재 지도 화면에 확인된 공공시설이 없어요.';
+  if (category === 'public-parking') return '현재 지도 화면에 확인된 공영주차장이 없어요.';
   return '현재 지도 화면에 표시할 최근 거래가 없어요.';
 }
 
