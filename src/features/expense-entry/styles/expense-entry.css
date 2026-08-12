@@ -1,14 +1,14 @@
 .expense-entry {
-  --expense-food: #ed7f52;
-  --expense-food-soft: #fff0e8;
-  --expense-cafe: #956ed0;
-  --expense-cafe-soft: #f3ecfb;
-  --expense-transport: #4c91d7;
-  --expense-transport-soft: #e9f4ff;
-  --expense-shopping: #df608c;
-  --expense-shopping-soft: #ffeff5;
-  --expense-etc: #6d7b89;
-  --expense-etc-soft: #edf1f3;
+  --expense-food: #ff6b6b;
+  --expense-food-soft: rgb(255 107 107 / 12%);
+  --expense-cafe: #ee6c9c;
+  --expense-cafe-soft: rgb(238 108 156 / 12%);
+  --expense-transport: #3fa9d8;
+  --expense-transport-soft: rgb(63 169 216 / 12%);
+  --expense-shopping: #ffc145;
+  --expense-shopping-soft: rgb(255 193 69 / 12%);
+  --expense-etc: #9ea3a8;
+  --expense-etc-soft: rgb(158 163 168 / 12%);
 }
 
 .expense-entry__today {
@@ -153,7 +153,7 @@
   width: 2.25rem;
   height: 2.25rem;
   place-items: center;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill);
 }
 
 .expense-entry__category strong {
