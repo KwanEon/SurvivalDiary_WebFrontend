@@ -1,4 +1,4 @@
-import { apiRequest } from '../auth';
+import { ApiError, apiRequest } from '../auth';
 import type {
   HiddenPolicyRequest,
   HiddenPolicySummary,
@@ -53,9 +53,42 @@ export function getPolicyRecommendations(
   request: PolicyRecommendationRequest,
   signal?: AbortSignal,
 ) {
-  return apiRequest<PolicySearchResponse>('/policies/recommendations', {
-    method: 'POST',
-    body: JSON.stringify(request),
-    signal,
+  const send = () =>
+    apiRequest<PolicySearchResponse>('/policies/recommendations', {
+      method: 'POST',
+      body: JSON.stringify(request),
+      signal,
+    });
+
+  return send().catch(async (error: unknown) => {
+    if (signal?.aborted) throw new DOMException('요청이 취소되었습니다.', 'AbortError');
+    if (!isTransientPolicyError(error)) throw error;
+    await waitForPolicyRetry(signal);
+    return send();
+  });
+}
+
+function isTransientPolicyError(error: unknown) {
+  if (error instanceof ApiError) {
+    return (
+      error.code === 'Y002' ||
+      error.code === 'Y003' ||
+      [429, 500, 502, 503, 504].includes(error.status)
+    );
+  }
+  return error instanceof TypeError;
+}
+
+function waitForPolicyRetry(signal?: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      signal?.removeEventListener('abort', handleAbort);
+      resolve();
+    }, 400);
+    const handleAbort = () => {
+      window.clearTimeout(timeoutId);
+      reject(new DOMException('요청이 취소되었습니다.', 'AbortError'));
+    };
+    signal?.addEventListener('abort', handleAbort, { once: true });
   });
 }
