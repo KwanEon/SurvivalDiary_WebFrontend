@@ -119,9 +119,8 @@ function ProfileEditPage() {
     <div className="page profile-edit-page">
       <div className="page-heading profile-edit-page__heading">
         <div>
-          <p className="page-heading__eyebrow">Edit profile</p>
           <h1>회원 정보 수정</h1>
-          <p>App과 같은 회원 정보와 프로필 사진을 관리할 수 있어요.</p>
+          <p>앱과 같은 회원 정보와 프로필 사진을 관리할 수 있어요.</p>
         </div>
         <Link className="button button--secondary" href="/profile">
           <ArrowLeft size={17} /> 마이페이지로
@@ -178,7 +177,6 @@ function ProfileEditPage() {
         <section className="ui-card profile-form-card">
           <div className="profile-section__heading">
             <div>
-              <span>Personal information</span>
               <h2>기본 정보</h2>
             </div>
           </div>

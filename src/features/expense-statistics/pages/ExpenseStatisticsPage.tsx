@@ -352,7 +352,6 @@ function ExpenseListDialog({ title, expenses, onClose, onDelete }: ExpenseListDi
       >
         <div className="expense-list-dialog__header">
           <div>
-            <span>Expense records</span>
             <h2 id="expense-list-title">{title}</h2>
           </div>
           <button type="button" onClick={onClose} aria-label="지출 목록 닫기">
@@ -545,7 +544,6 @@ function ExpenseStatisticsPage() {
     <div className="page expense-statistics">
       <div className="page-heading expense-statistics__heading">
         <div>
-          <p className="page-heading__eyebrow">Spending insight</p>
           <h1>지출 통계</h1>
           <p>카테고리와 기간별 소비 흐름을 한눈에 비교해 보세요.</p>
         </div>
@@ -648,7 +646,6 @@ function ExpenseStatisticsPage() {
         <div className="expense-trend">
           <div className="expense-trend__header">
             <div>
-              <span>Spending trend</span>
               <h3>{period === 'daily' ? '최근 7일 지출 흐름' : '최근 7개월 지출 흐름'}</h3>
             </div>
             <small>오늘 기준</small>
@@ -661,7 +658,6 @@ function ExpenseStatisticsPage() {
         <article className="ui-card expense-category-stats">
           <div className="expense-statistics-section-heading">
             <div>
-              <span>By category</span>
               <h2>카테고리별 지출</h2>
             </div>
             <strong>{currentExpenses.length}건</strong>
@@ -694,7 +690,6 @@ function ExpenseStatisticsPage() {
         <article className="ui-card expense-period-compare">
           <div className="expense-statistics-section-heading">
             <div>
-              <span>Period compare</span>
               <h2>{period === 'daily' ? '전날과 비교' : '지난달과 비교'}</h2>
             </div>
             <div className="expense-period-compare__legend">

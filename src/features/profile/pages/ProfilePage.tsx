@@ -61,7 +61,6 @@ function ProfilePage() {
     <div className="page profile-page">
       <div className="page-heading profile-page__heading">
         <div>
-          <p className="page-heading__eyebrow">My profile</p>
           <h1>마이페이지</h1>
           <p>내 정보와 프로필 사진을 한곳에서 관리해요.</p>
         </div>
@@ -89,7 +88,6 @@ function ProfilePage() {
           name={user.name}
         />
         <div className="profile-hero__copy">
-          <span>Survival diary member</span>
           <h2>{user.name}</h2>
           <p>{user.email ?? '이메일 미등록'}</p>
           {user.bio && <blockquote>{user.bio}</blockquote>}
@@ -103,7 +101,6 @@ function ProfilePage() {
         <section className="ui-card profile-section" aria-labelledby="profile-account-title">
           <div className="profile-section__heading">
             <div>
-              <span>Account</span>
               <h2 id="profile-account-title">계정 관리</h2>
             </div>
           </div>
@@ -138,7 +135,6 @@ function ProfilePage() {
         <section className="ui-card profile-section" aria-labelledby="profile-info-title">
           <div className="profile-section__heading">
             <div>
-              <span>Information</span>
               <h2 id="profile-info-title">내 정보</h2>
             </div>
           </div>

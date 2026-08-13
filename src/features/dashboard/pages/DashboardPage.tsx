@@ -324,7 +324,6 @@ function DailySummaryDialog({ summary, expenses, onClose }: DailySummaryDialogPr
       >
         <div className="dashboard-dialog__header">
           <div>
-            <span>Daily briefing</span>
             <h2 id="summary-dialog-title">오늘의 요약</h2>
           </div>
           <button type="button" onClick={onClose} aria-label="오늘의 요약 닫기">
@@ -575,7 +574,6 @@ function DashboardPage() {
     <div className="page dashboard">
       <div className="page-heading dashboard__heading">
         <div>
-          <p className="page-heading__eyebrow">Today&apos;s survival</p>
           <h1>안녕하세요, {displayName}님! 👋</h1>
           <p>오늘도 가볍게 지갑을 지켜봐요.</p>
         </div>
@@ -843,7 +841,6 @@ function DashboardPage() {
         <article className="ui-card dashboard-quick">
           <div className="ui-card__header">
             <div>
-              <span className="dashboard__section-kicker">Quick menu</span>
               <h2>빠른 메뉴</h2>
             </div>
           </div>
@@ -875,7 +872,6 @@ function DashboardPage() {
       <section className="ui-card dashboard-news" aria-labelledby="dashboard-news-title">
         <div className="dashboard-section-heading">
           <div>
-            <span>For your wallet</span>
             <h2 id="dashboard-news-title">맞춤 뉴스</h2>
             <p>선택한 관심사와 가까운 최신 기사를 모았어요.</p>
           </div>

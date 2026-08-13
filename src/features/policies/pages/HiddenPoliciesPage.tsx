@@ -108,7 +108,6 @@ function HiddenPoliciesPage() {
 
       <div className="page-heading">
         <div>
-          <p className="page-heading__eyebrow">Hidden policies</p>
           <h1>관심 없음 정책</h1>
           <p>추천 목록에서 숨긴 정책을 확인하고 다시 표시할 수 있어요.</p>
         </div>

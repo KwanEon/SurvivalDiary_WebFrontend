@@ -793,7 +793,6 @@ function SavingsMapPage() {
     <div className="page savings-map">
       <div className="page-heading">
         <div>
-          <p className="page-heading__eyebrow">Savings map</p>
           <h1>절약 지도</h1>
           <p>내 주변의 합리적인 가격 정보와 공공시설을 지도에서 찾아보세요.</p>
         </div>
