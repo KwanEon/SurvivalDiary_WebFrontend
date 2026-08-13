@@ -1,7 +1,6 @@
 import {
   BriefcaseBusiness,
   Building2,
-  ChevronRight,
   CircleDollarSign,
   EyeOff,
   GraduationCap,
@@ -72,6 +71,12 @@ function PolicyCard({ policy, featured = false, hiding, onOpen, onHide }: Policy
 
   return (
     <article className={`ui-card policy-card ${featured ? 'policy-card--featured' : ''}`}>
+      <button
+        className="policy-card__open"
+        type="button"
+        onClick={() => onOpen(policy)}
+        aria-label={`${policy.title} 상세 페이지 열기`}
+      />
       <span className={`policy-card__icon policy-card__icon--${visualTone}`}>
         <Icon size={featured ? 26 : 22} aria-hidden="true" />
       </span>
@@ -116,18 +121,13 @@ function PolicyCard({ policy, featured = false, hiding, onOpen, onHide }: Policy
           )}
         </strong>
         <button
-          className="policy-card__detail"
-          type="button"
-          onClick={() => onOpen(policy)}
-          aria-label={`${policy.title} 상세 보기`}
-        >
-          상세 보기 <ChevronRight size={15} aria-hidden="true" />
-        </button>
-        <button
           className="policy-card__hide"
           type="button"
           disabled={hiding}
-          onClick={() => onHide(policy)}
+          onClick={(event) => {
+            event.stopPropagation();
+            onHide(policy);
+          }}
           aria-label={`${policy.title} 관심 없음으로 설정`}
         >
           <EyeOff size={14} aria-hidden="true" /> 관심 없음
