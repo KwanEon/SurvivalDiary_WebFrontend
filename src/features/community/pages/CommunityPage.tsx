@@ -108,7 +108,7 @@ function CommunityPage() {
       <div className="page-heading">
         <div>
           <h1>커뮤니티</h1>
-          <p>생존일기를 발견하고 절약 정보와 경험을 나눠보세요.</p>
+          <p>생존자들이 발견한 알뜰한 정보와 절약 경험을 나눠 보세요.</p>
         </div>
         <Link className="button button--primary" href="/community/new">
           <PenLine size={17} /> 글 작성하기
@@ -120,7 +120,7 @@ function CommunityPage() {
         <div>
           <span>이번 주 절약 미션</span>
           <strong>배달 대신 직접 요리하고 인증하기</strong>
-          <p>작은 실천을 기록하고 다른 생존일기 회원들과 공유해 보세요.</p>
+          <p>현재 128명의 생존자가 참여 중이에요.</p>
         </div>
       </section>
 
