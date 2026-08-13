@@ -11,6 +11,7 @@ import {
   MessageCircleMore,
   PlusCircle,
   Search,
+  ShieldCheck,
   Sparkles,
   UserRound,
   X,
@@ -150,6 +151,7 @@ function AppShell({ children }: AppShellProps) {
           </div>
 
           <div className="topbar__actions">
+            {user?.role === 'ADMIN' && <Link className="topbar__admin-link" href="/admin"><ShieldCheck size={17} /> 관리자</Link>}
             <button className="icon-button" type="button" aria-label="도움말">
               <CircleHelp size={18} />
             </button>

@@ -17,6 +17,16 @@ const CommunityPostPage = lazy(() => import('../features/community/pages/Communi
 const CommunityPostFormPage = lazy(() => import('../features/community/pages/CommunityPostFormPage'));
 const ProfilePage = lazy(() => import('../features/profile'));
 const ProfileEditPage = lazy(() => import('../features/profile/pages/ProfileEditPage'));
+const AdminPage = lazy(() => import('../features/admin'));
+
+function AdminOnlyRoute() {
+  const { user, isLoading } = useAuth();
+  const [location] = useLocation();
+  if (isLoading) return <div className="page-loading">관리자 권한을 확인하고 있어요.</div>;
+  if (!user) return <Redirect to={`/login?returnTo=${encodeURIComponent(location)}`} />;
+  if (user.role !== 'ADMIN') return <Redirect to="/" />;
+  return <Suspense fallback={<div className="page-loading">관리자 센터를 준비하고 있어요.</div>}><AdminPage /></Suspense>;
+}
 
 function ProtectedApp() {
   const { user, isLoading } = useAuth();
@@ -61,6 +71,7 @@ function AppRoutes() {
       <Route path="/auth/callback/naver">
         <SocialCallbackPage provider="naver" />
       </Route>
+      <Route path="/admin" component={AdminOnlyRoute} />
       <Route>
         <ProtectedApp />
       </Route>
