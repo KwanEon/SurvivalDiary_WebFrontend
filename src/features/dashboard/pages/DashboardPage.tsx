@@ -485,7 +485,7 @@ function DashboardPage() {
     ? Math.max(0, Math.round((summary.spentToday / summary.dailyLimit) * 100))
     : 0;
   const topCategory = summary?.topCategoryId ? categoryMeta[summary.topCategoryId] : undefined;
-  const displayName = summary?.userName || user?.nickname || user?.name || '생존러';
+  const displayName = summary?.userName || user?.nickname || user?.name || '생존자';
   const isNearLimit = dailyUsagePercent >= 60 && dailyUsagePercent < 100;
   const isOverLimit = Boolean(summary?.dailyLimit && dailyUsagePercent >= 100);
   const TopCategoryIcon = topCategory?.icon ?? CreditCard;
