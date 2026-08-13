@@ -13,6 +13,8 @@ const HiddenPoliciesPage = lazy(() => import('../features/policies/pages/HiddenP
 const PolicyDetailPage = lazy(() => import('../features/policies/pages/PolicyDetailPage'));
 const SavingsMapPage = lazy(() => import('../features/savings-map'));
 const CommunityPage = lazy(() => import('../features/community'));
+const CommunityPostPage = lazy(() => import('../features/community/pages/CommunityPostPage'));
+const CommunityPostFormPage = lazy(() => import('../features/community/pages/CommunityPostFormPage'));
 const ProfilePage = lazy(() => import('../features/profile'));
 const ProfileEditPage = lazy(() => import('../features/profile/pages/ProfileEditPage'));
 
@@ -36,6 +38,9 @@ function ProtectedApp() {
           <Route path="/policies" component={PoliciesPage} />
           <Route path="/map" component={SavingsMapPage} />
           <Route path="/community" component={CommunityPage} />
+          <Route path="/community/new" component={CommunityPostFormPage} />
+          <Route path="/community/:postId/edit" component={CommunityPostFormPage} />
+          <Route path="/community/:postId" component={CommunityPostPage} />
           <Route path="/profile/edit" component={ProfileEditPage} />
           <Route path="/profile" component={ProfilePage} />
           <Route component={DashboardPage} />
