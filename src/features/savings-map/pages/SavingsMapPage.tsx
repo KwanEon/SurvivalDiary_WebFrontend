@@ -9,7 +9,6 @@ import {
   LocateFixed,
   MapPin,
   Navigation,
-  RefreshCw,
   Store,
   Users,
 } from 'lucide-react';
@@ -105,6 +104,7 @@ function SavingsMapPage() {
 
   const [category, setCategory] = useState<MapCategory>('favorites');
   const [goodPriceCategory, setGoodPriceCategory] = useState('all');
+  const [housingCategory, setHousingCategory] = useState('all');
   const [facilityFreeOnly, setFacilityFreeOnly] = useState(false);
   const [parkingFreeOnly, setParkingFreeOnly] = useState(false);
   const [goodPriceStores, setGoodPriceStores] = useState<GoodPriceStore[]>([]);
@@ -551,6 +551,18 @@ function SavingsMapPage() {
     [housingDeals, viewportBounds],
   );
 
+  const filteredHousingDeals = useMemo(
+    () =>
+      visibleHousingDeals.filter((deal) => {
+        if (housingCategory === 'all') return true;
+        if (housingCategory === 'single-family') return deal.propertyType === '단독/다가구';
+        if (housingCategory === 'officetel') return deal.propertyType === '오피스텔';
+        if (housingCategory === 'jeonse') return deal.dealType === '전세';
+        return deal.dealType === '월세';
+      }),
+    [housingCategory, visibleHousingDeals],
+  );
+
   const markerItems = useMemo<SelectedMapItem[]>(() => {
     if (category === 'favorites') {
       return visibleFavorites;
@@ -565,15 +577,15 @@ function SavingsMapPage() {
       return visibleParkingLots.map((value) => ({ kind: 'public-parking', value }));
     }
     const uniqueDeals = new Map<string, HousingRentDeal>();
-    for (const deal of visibleHousingDeals) {
+    for (const deal of filteredHousingDeals) {
       uniqueDeals.set(`${deal.propertyType}|${deal.latitude}|${deal.longitude}`, deal);
     }
     return [...uniqueDeals.values()].map((value) => ({ kind: 'housing', value }));
   }, [
     category,
     filteredGoodPriceStores,
+    filteredHousingDeals,
     visibleFavorites,
-    visibleHousingDeals,
     visibleParkingLots,
     visiblePublicFacilities,
   ]);
@@ -648,6 +660,7 @@ function SavingsMapPage() {
     }
     setCategory(nextCategory);
     setGoodPriceCategory('all');
+    setHousingCategory('all');
     setSelected(null);
     setDataError(null);
     clearDirections();
@@ -796,15 +809,6 @@ function SavingsMapPage() {
           <h1>절약 지도</h1>
           <p>내 주변의 합리적인 가격 정보와 공공시설을 지도에서 찾아보세요.</p>
         </div>
-        <button
-          className="button button--secondary"
-          type="button"
-          onClick={() => void moveToCurrentLocation()}
-          disabled={!mapReady || isLocating}
-        >
-          <LocateFixed size={17} />
-          {isLocating ? '위치 확인 중...' : '내 위치로'}
-        </button>
       </div>
 
       <section className="savings-map__controls" aria-label="지도 카테고리와 필터">
@@ -834,15 +838,6 @@ function SavingsMapPage() {
               {category === 'public-parking' ? '무료 주차장만' : '무료 시설만'}
             </label>
           )}
-          <button
-            className="button button--secondary savings-map__refresh"
-            type="button"
-            onClick={() => void refreshViewport(true)}
-            disabled={!mapReady || dataLoading}
-          >
-            <RefreshCw size={15} />
-            현재 지도 영역 재검색
-          </button>
         </div>
       </section>
 
@@ -895,29 +890,6 @@ function SavingsMapPage() {
           </div>
         )}
       </form>
-
-      {category === 'good-price' && visibleGoodPriceStores.length > 0 && (
-        <div className="savings-map__subcategories" aria-label="착한가격업소 업종 필터">
-          {GOOD_PRICE_GROUPS.map((group) => {
-            const count =
-              group.value === 'all'
-                ? visibleGoodPriceStores.length
-                : visibleGoodPriceStores.filter(
-                    (store) => goodPriceGroup(store.category) === group.value,
-                  ).length;
-            return (
-              <button
-                type="button"
-                className={goodPriceCategory === group.value ? 'is-active' : ''}
-                onClick={() => setGoodPriceCategory(group.value)}
-                key={group.value}
-              >
-                {group.label} <strong>{count}</strong>
-              </button>
-            );
-          })}
-        </div>
-      )}
 
       <section className="ui-card savings-map__workspace">
         <div className="savings-map__canvas" aria-label="절약 장소 지도">
@@ -1001,45 +973,21 @@ function SavingsMapPage() {
               category={category}
               region={region}
               favorites={visibleFavorites}
-              goodPriceStores={filteredGoodPriceStores}
+              goodPriceStores={visibleGoodPriceStores}
               facilities={visiblePublicFacilities}
               parkingLots={visibleParkingLots}
               housingDeals={visibleHousingDeals}
+              goodPriceCategory={goodPriceCategory}
+              housingCategory={housingCategory}
               loading={dataLoading}
               error={dataError}
               onRetry={() => void refreshViewport(true)}
               onSelect={setSelected}
+              onGoodPriceCategoryChange={setGoodPriceCategory}
+              onHousingCategoryChange={setHousingCategory}
             />
           )}
         </aside>
-      </section>
-
-      <section className="savings-map__legend" aria-label="지도 범례">
-        <span>
-          <i className="savings-map__legend-dot savings-map__legend-dot--green" />
-          착한가격업소
-        </span>
-        <span>
-          <i className="savings-map__legend-dot savings-map__legend-dot--teal" />
-          공공시설
-        </span>
-        <span>
-          <i className="savings-map__legend-dot savings-map__legend-dot--purple" />
-          공영주차장
-        </span>
-        <span>
-          <i className="savings-map__legend-dot savings-map__legend-dot--orange" />
-          단독·다가구
-        </span>
-        <span>
-          <i className="savings-map__legend-dot savings-map__legend-dot--blue" />
-          오피스텔
-        </span>
-        <p>
-          {region && (category === 'good-price' || category === 'housing')
-            ? `${regionLabel(region)} 기준`
-            : '지도를 이동하면 현재 영역을 다시 조회합니다.'}
-        </p>
       </section>
     </div>
   );
@@ -1062,10 +1010,14 @@ interface OverviewPanelProps {
   facilities: PublicFacility[];
   parkingLots: PublicParkingLot[];
   housingDeals: HousingRentDeal[];
+  goodPriceCategory: string;
+  housingCategory: string;
   loading: boolean;
   error: string | null;
   onRetry: () => void;
   onSelect: (item: SelectedMapItem) => void;
+  onGoodPriceCategoryChange: (category: string) => void;
+  onHousingCategoryChange: (category: string) => void;
 }
 
 function OverviewPanel(props: OverviewPanelProps) {
@@ -1136,6 +1088,34 @@ function OverviewPanel(props: OverviewPanelProps) {
             </button>
           ))}
         </div>
+      ) : category === 'good-price' ? (
+        <div className="savings-map-overview__counts">
+          {GOOD_PRICE_GROUPS.filter((group) => group.value !== 'all').map((group) => (
+            <CountCard
+              icon={
+                <CategoryMarker
+                  tone={`good-price-${group.value}`}
+                  glyph={goodPriceGroupGlyph(group.value)}
+                />
+              }
+              label={group.label}
+              count={
+                props.goodPriceStores.filter(
+                  (store) => goodPriceGroup(store.category) === group.value,
+                ).length
+              }
+              suffix="곳"
+              selected={props.goodPriceCategory === group.value}
+              onClick={() =>
+                props.onGoodPriceCategoryChange(
+                  props.goodPriceCategory === group.value ? 'all' : group.value,
+                )
+              }
+              key={group.value}
+            />
+          ))}
+          <p>분류를 누르면 해당 업소만 지도에 표시돼요.</p>
+        </div>
       ) : category === 'public-facility' ? (
         <div className="savings-map-overview__list">
           {props.facilities.map((facility) => (
@@ -1175,46 +1155,50 @@ function OverviewPanel(props: OverviewPanelProps) {
       ) : category === 'housing' ? (
         <div className="savings-map-overview__counts">
           <CountCard
-            icon={<Home size={20} />}
+            icon={<CategoryMarker tone="orange" glyph="🏠" />}
             label="단독/다가구"
             count={props.housingDeals.filter((deal) => deal.propertyType === '단독/다가구').length}
+            selected={props.housingCategory === 'single-family'}
+            onClick={() =>
+              props.onHousingCategoryChange(
+                props.housingCategory === 'single-family' ? 'all' : 'single-family',
+              )
+            }
           />
           <CountCard
-            icon={<Building size={20} />}
+            icon={<CategoryMarker tone="blue" glyph="🏢" />}
             label="오피스텔"
             count={props.housingDeals.filter((deal) => deal.propertyType === '오피스텔').length}
+            selected={props.housingCategory === 'officetel'}
+            onClick={() =>
+              props.onHousingCategoryChange(
+                props.housingCategory === 'officetel' ? 'all' : 'officetel',
+              )
+            }
           />
           <CountCard
-            icon={<Banknote size={20} />}
+            icon={<CategoryMarker tone="green" glyph="🔑" />}
             label="전세"
             count={props.housingDeals.filter((deal) => deal.dealType === '전세').length}
+            selected={props.housingCategory === 'jeonse'}
+            onClick={() =>
+              props.onHousingCategoryChange(props.housingCategory === 'jeonse' ? 'all' : 'jeonse')
+            }
           />
           <CountCard
-            icon={<Users size={20} />}
+            icon={<CategoryMarker tone="pink" glyph="₩" />}
             label="월세"
             count={props.housingDeals.filter((deal) => deal.dealType === '월세').length}
+            selected={props.housingCategory === 'monthly-rent'}
+            onClick={() =>
+              props.onHousingCategoryChange(
+                props.housingCategory === 'monthly-rent' ? 'all' : 'monthly-rent',
+              )
+            }
           />
-          <p>마커를 누르면 거래 상세 정보를 확인할 수 있어요.</p>
+          <p>분류를 누르면 해당 거래만 지도에 표시돼요.</p>
         </div>
-      ) : (
-        <div className="savings-map-overview__list">
-          {props.goodPriceStores.map((store) => (
-            <button
-              type="button"
-              onClick={() => onSelect({ kind: 'good-price', value: store })}
-              key={store.id}
-            >
-              <Store size={17} />
-              <span>
-                <strong>{store.name}</strong>
-                <small>
-                  {store.category} · {store.address || '주소 정보 없음'}
-                </small>
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -1223,17 +1207,42 @@ function CountCard({
   icon,
   label,
   count,
+  suffix = '건',
+  selected = false,
+  onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   count: number;
+  suffix?: string;
+  selected?: boolean;
+  onClick: () => void;
 }) {
   return (
-    <div>
+    <button
+      type="button"
+      className={selected ? 'is-active' : ''}
+      aria-pressed={selected}
+      onClick={onClick}
+    >
       {icon}
       <span>{label}</span>
-      <strong>{count}건</strong>
-    </div>
+      <strong>
+        {count}
+        {suffix}
+      </strong>
+    </button>
+  );
+}
+
+function CategoryMarker({ tone, glyph }: { tone: string; glyph: string }) {
+  return (
+    <i
+      className={`savings-map-overview__marker savings-map__sdk-marker--${tone}`}
+      aria-hidden="true"
+    >
+      <span>{glyph}</span>
+    </i>
   );
 }
 
@@ -1802,6 +1811,16 @@ function goodPriceGlyph(category: string) {
   if (normalized.includes('\uC219\uBC15')) return '\u{1F3E8}';
   if (normalized.includes('\uBAA9\uC695')) return '\u{1F6C1}';
   return '\u{1F3EA}';
+}
+
+function goodPriceGroupGlyph(group: string) {
+  if (group === 'food') return '🍽️';
+  if (group === 'beauty') return '✂️';
+  if (group === 'barber') return '🧔';
+  if (group === 'laundry') return '🧺';
+  if (group === 'lodging') return '🏨';
+  if (group === 'bath') return '🛁';
+  return '🏪';
 }
 
 function goodPriceGroup(category: string) {

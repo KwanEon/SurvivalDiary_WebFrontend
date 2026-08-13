@@ -7,8 +7,7 @@
 }
 
 .savings-map__categories,
-.savings-map__filter-tools,
-.savings-map__subcategories {
+.savings-map__filter-tools {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -18,8 +17,7 @@
   overflow-x: auto;
 }
 
-.savings-map__categories .chip,
-.savings-map__subcategories button {
+.savings-map__categories .chip {
   flex: 0 0 auto;
   cursor: pointer;
 }
@@ -41,12 +39,6 @@
 
 .savings-map__free-filter input {
   accent-color: var(--color-primary-600);
-}
-
-.savings-map__refresh {
-  min-height: 2.5rem;
-  padding: 0 var(--space-3);
-  font-size: 0.75rem;
 }
 
 .savings-map__address-search {
@@ -132,32 +124,6 @@
   border-color: var(--color-primary-300);
   color: var(--color-primary-800);
   background: var(--color-primary-50);
-}
-
-.savings-map__subcategories {
-  margin: 0 0 var(--space-3);
-  padding-bottom: 0.15rem;
-  overflow-x: auto;
-}
-
-.savings-map__subcategories button {
-  padding: 0.45rem 0.7rem;
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-pill);
-  color: var(--color-ink-500);
-  background: var(--color-surface);
-  font-size: 0.6875rem;
-  font-weight: 700;
-}
-
-.savings-map__subcategories button.is-active {
-  border-color: var(--color-primary-600);
-  color: var(--color-primary-800);
-  background: var(--color-primary-50);
-}
-
-.savings-map__subcategories strong {
-  margin-left: 0.2rem;
 }
 
 .savings-map__workspace {
@@ -711,7 +677,7 @@
   gap: var(--space-2);
 }
 
-.savings-map-overview__counts > div {
+.savings-map-overview__counts > button {
   display: grid;
   gap: 0.25rem;
   padding: var(--space-3);
@@ -719,6 +685,34 @@
   border-radius: var(--radius-md);
   color: var(--color-primary-700);
   background: var(--color-surface-soft);
+  cursor: pointer;
+  text-align: left;
+}
+
+.savings-map-overview__counts > button:hover,
+.savings-map-overview__counts > button.is-active {
+  border-color: var(--color-primary-600);
+  background: var(--color-primary-50);
+}
+
+.savings-map-overview__marker {
+  display: grid;
+  width: 1.65rem;
+  height: 1.65rem;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  color: #fff;
+  box-shadow: 0 4px 9px rgb(16 32 51 / 20%);
+  font-size: 0.68rem;
+  font-style: normal;
+  transform: rotate(-45deg);
+}
+
+.savings-map-overview__marker span {
+  color: #fff;
+  font-size: 0.68rem;
+  transform: rotate(45deg);
 }
 
 .savings-map-overview__counts span {
@@ -755,46 +749,6 @@
   margin-top: var(--space-5);
   color: var(--color-ink-400);
   font-size: 0.6875rem;
-}
-
-.savings-map__legend {
-  display: flex;
-  align-items: center;
-  gap: var(--space-5);
-  margin-top: var(--space-3);
-  padding: 0 var(--space-2);
-  color: var(--color-ink-500);
-  font-size: 0.6875rem;
-}
-
-.savings-map__legend span {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-.savings-map__legend-dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-}
-.savings-map__legend-dot--green {
-  background: var(--color-primary-600);
-}
-.savings-map__legend-dot--teal {
-  background: #148a83;
-}
-.savings-map__legend-dot--orange {
-  background: var(--color-warning);
-}
-.savings-map__legend-dot--blue {
-  background: var(--color-info);
-}
-.savings-map__legend-dot--purple {
-  background: #7356b8;
-}
-.savings-map__legend p {
-  margin-left: auto;
-  color: var(--color-ink-400);
 }
 
 @media (max-width: 1150px) {
@@ -836,14 +790,6 @@
   .savings-map-overview__list {
     max-height: 26rem;
     flex: 0 1 auto;
-  }
-  .savings-map__legend {
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-  .savings-map__legend p {
-    width: 100%;
-    margin-left: 0;
   }
 }
 
