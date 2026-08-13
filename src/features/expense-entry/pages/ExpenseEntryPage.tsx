@@ -175,7 +175,6 @@ function ExpenseEntryPage() {
     <div className="page expense-entry">
       <div className="page-heading expense-entry__heading">
         <div>
-          <p className="page-heading__eyebrow">Manual expense</p>
           <h1>지출 등록</h1>
           <p>나의 지출을 기록해요.</p>
         </div>
@@ -336,7 +335,6 @@ function ExpenseEntryPage() {
                 <WalletCards size={19} />
               </span>
               <div>
-                <small>Before saving</small>
                 <h2>등록 전 확인</h2>
               </div>
             </div>

@@ -17,7 +17,6 @@ function CommunityPage() {
     <div className="page community">
       <div className="page-heading">
         <div>
-          <p className="page-heading__eyebrow">Community</p>
           <h1>커뮤니티</h1>
           <p>생존러들이 발견한 알뜰한 정보와 절약 경험을 나눠 보세요.</p>
         </div>
@@ -117,7 +116,7 @@ function CommunityPage() {
               >
                 {post.thumbnail === 'market' && (
                   <div className="community-thumbnail-market">
-                    <span>SALE</span>
+                    <span>할인</span>
                     <strong>50%</strong>
                     <i />
                     <i />
