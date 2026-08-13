@@ -77,11 +77,13 @@ function AppShell({ children }: AppShellProps) {
     <div className="app-shell">
       <aside className={`sidebar ${isMenuOpen ? 'sidebar--open' : ''}`}>
         <div className="sidebar__brand">
+          <Link className="sidebar__brand-link" href="/" aria-label="생존일기 홈으로 이동">
           <img src="/brand/app-icon.png" alt="" aria-hidden="true" />
           <div>
             <strong>생존일기</strong>
             <span>오늘도 야무지게</span>
           </div>
+          </Link>
           <button
             className="sidebar__close"
             type="button"
