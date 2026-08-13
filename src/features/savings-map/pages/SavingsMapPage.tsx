@@ -1433,6 +1433,13 @@ function SelectedItemPanel(props: SelectedItemPanelProps) {
             value={`${lot.dailyFee.toLocaleString('ko-KR')}원`}
           />
         )}
+        {lot.monthlyFee !== null && lot.monthlyFee > 0 && (
+          <DetailRow
+            icon={<Banknote size={15} />}
+            label="월 정기권"
+            value={`${lot.monthlyFee.toLocaleString('ko-KR')}원`}
+          />
+        )}
         {lot.paymentMethods && (
           <DetailRow icon={<Banknote size={15} />} label="결제방법" value={lot.paymentMethods} />
         )}
@@ -1866,7 +1873,7 @@ function parkingFeeLabel(lot: PublicParkingLot) {
     lot.basicFee === null ||
     lot.basicFee < 0
   ) {
-    return '요금 정보 없음';
+    return '일반 주차요금 정보 없음';
   }
   return `${lot.basicMinutes}분 ${lot.basicFee.toLocaleString('ko-KR')}원`;
 }
