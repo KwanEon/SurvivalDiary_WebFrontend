@@ -373,6 +373,11 @@
   font-size: 0.82rem;
 }
 
+.savings-map__sdk-marker--parking {
+  border-radius: 0.75rem 0.75rem 0.75rem 0.2rem;
+  box-shadow: 0 8px 20px rgb(70 49 148 / 28%);
+}
+
 .savings-map__sdk-marker--selected {
   width: 2.85rem;
   height: 2.85rem;
@@ -783,6 +788,9 @@
 }
 .savings-map__legend-dot--blue {
   background: var(--color-info);
+}
+.savings-map__legend-dot--purple {
+  background: #7356b8;
 }
 .savings-map__legend p {
   margin-left: auto;

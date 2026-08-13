@@ -1,4 +1,5 @@
-export type MapCategory = 'favorites' | 'good-price' | 'public-facility' | 'housing';
+export type MapCategory =
+  'favorites' | 'good-price' | 'public-facility' | 'public-parking' | 'housing';
 
 export interface Coordinates {
   latitude: number;
@@ -62,6 +63,34 @@ export interface PublicFacility {
   referenceDate: string;
 }
 
+export interface PublicParkingLot {
+  id: string;
+  name: string;
+  parkingType: string;
+  address: string;
+  phone: string;
+  latitude: number | null;
+  longitude: number | null;
+  distanceMeters: number | null;
+  free: boolean;
+  capacity: number | null;
+  operationDays: string;
+  weekdayHours: string;
+  saturdayHours: string;
+  holidayHours: string;
+  basicMinutes: number | null;
+  basicFee: number | null;
+  additionalMinutes: number | null;
+  additionalFee: number | null;
+  dailyFee: number | null;
+  monthlyFee: number | null;
+  paymentMethods: string;
+  notes: string;
+  institution: string;
+  accessibleParking: boolean;
+  referenceDate: string;
+}
+
 export interface HousingRentDeal {
   id: string;
   propertyType: string;
@@ -95,6 +124,7 @@ export interface DirectionsRoute {
 export type SelectedMapItem =
   | { kind: 'good-price'; value: GoodPriceStore }
   | { kind: 'public-facility'; value: PublicFacility }
+  | { kind: 'public-parking'; value: PublicParkingLot }
   | { kind: 'housing'; value: HousingRentDeal };
 
 export interface PageResponse<T> {
