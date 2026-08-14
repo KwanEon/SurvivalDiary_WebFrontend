@@ -15,7 +15,15 @@ import {
   WalletCards,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState, type ComponentType } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType,
+} from 'react';
 import { deleteExpense, getExpenses } from '../api';
 import type {
   CategoryStatistic,
@@ -27,6 +35,56 @@ import type {
 import '../styles/expense-statistics.css';
 
 const wonFormatter = new Intl.NumberFormat('ko-KR');
+
+function ExpenseTotalAmount({ value }: { value: string }) {
+  const amountRef = useRef<HTMLHeadingElement>(null);
+
+  useLayoutEffect(() => {
+    const amountElement = amountRef.current;
+
+    if (!amountElement) {
+      return undefined;
+    }
+
+    const fitAmount = () => {
+      amountElement.style.removeProperty('--expense-total-font-size');
+
+      const availableWidth = amountElement.clientWidth;
+      const contentWidth = amountElement.scrollWidth;
+
+      if (availableWidth === 0 || contentWidth <= availableWidth) {
+        return;
+      }
+
+      const defaultFontSize = Number.parseFloat(window.getComputedStyle(amountElement).fontSize);
+      const fittedFontSize = Math.max(
+        16,
+        Math.floor(defaultFontSize * (availableWidth / contentWidth)),
+      );
+
+      amountElement.style.setProperty('--expense-total-font-size', `${fittedFontSize}px`);
+    };
+
+    fitAmount();
+
+    const resizeObserver = new ResizeObserver(fitAmount);
+    const amountContainer = amountElement.parentElement;
+
+    if (amountContainer) {
+      resizeObserver.observe(amountContainer);
+    }
+
+    void document.fonts?.ready.then(fitAmount);
+
+    return () => resizeObserver.disconnect();
+  }, [value]);
+
+  return (
+    <h2 ref={amountRef} id="expense-total-title">
+      {value}
+    </h2>
+  );
+}
 
 type CategoryIconComponent = ComponentType<{ size?: number }>;
 
@@ -59,6 +117,9 @@ const DirectionsBusIcon = createMaterialCategoryIcon(
 const ShoppingBagIcon = createMaterialCategoryIcon(
   'M18 6h-2c0-2.21-1.79-4-4-4S8 3.79 8 6H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-8 4c0 .55-.45 1-1 1s-1-.45-1-1V8h2v2zm2-6c1.1 0 2 .9 2 2h-4c0-1.1.9-2 2-2zm4 6c0 .55-.45 1-1 1s-1-.45-1-1V8h2v2z',
 );
+const SportsEsportsIcon = createMaterialCategoryIcon(
+  'M21.58 16.09l-1.09-7.66A4 4 0 0 0 16.53 5H7.47a4 4 0 0 0-3.96 3.43l-1.09 7.66A3.49 3.49 0 0 0 5.88 20c1.05 0 2.05-.48 2.71-1.29L10.12 17h3.76l1.53 1.71A3.49 3.49 0 0 0 18.12 20a3.49 3.49 0 0 0 3.46-3.91zM11 11H9v2H7v-2H5V9h2V7h2v2h2v2zm4-1c-.83 0-1.5-.67-1.5-1.5S14.17 7 15 7s1.5.67 1.5 1.5S15.83 10 15 10zm2 3c-.83 0-1.5-.67-1.5-1.5S16.17 10 17 10s1.5.67 1.5 1.5S17.83 13 17 13z',
+);
 const MoreHorizIcon = createMaterialCategoryIcon(
   'M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z',
 );
@@ -68,7 +129,7 @@ const categories: Record<
   {
     label: string;
     icon: CategoryIconComponent;
-    tone: 'food' | 'cafe' | 'transport' | 'shopping' | 'etc';
+    tone: 'food' | 'cafe' | 'transport' | 'shopping' | 'leisure' | 'etc';
   }
 > = {
   1: { label: '식비', icon: RestaurantIcon, tone: 'food' },
@@ -76,7 +137,10 @@ const categories: Record<
   3: { label: '교통', icon: DirectionsBusIcon, tone: 'transport' },
   4: { label: '쇼핑', icon: ShoppingBagIcon, tone: 'shopping' },
   5: { label: '기타', icon: MoreHorizIcon, tone: 'etc' },
+  6: { label: '여가', icon: SportsEsportsIcon, tone: 'leisure' },
 };
+
+const categoryOrder = [1, 2, 3, 4, 6, 5];
 
 function formatWon(amount: number) {
   return `${wonFormatter.format(amount)}원`;
@@ -210,12 +274,13 @@ function periodLabel(date: Date, period: StatisticsPeriod) {
 }
 
 function categoryStatistics(expenses: ExpenseRecord[], total: number): CategoryStatistic[] {
-  return Object.entries(categories).map(([categoryId, meta]) => {
+  return categoryOrder.map((categoryId) => {
+    const meta = categories[categoryId];
     const amount = expenses
-      .filter((expense) => expense.categoryId === Number(categoryId))
+      .filter((expense) => expense.categoryId === categoryId)
       .reduce((sum, expense) => sum + expense.amount, 0);
     return {
-      categoryId: Number(categoryId),
+      categoryId,
       label: meta.label,
       amount,
       ratio: total === 0 ? 0 : amount / total,
@@ -227,13 +292,17 @@ function categoryComparison(
   currentExpenses: ExpenseRecord[],
   previousExpenses: ExpenseRecord[],
 ): PeriodComparison[] {
-  return Object.entries(categories).map(([categoryId, meta]) => {
-    const id = Number(categoryId);
+  return categoryOrder.map((categoryId) => {
+    const meta = categories[categoryId];
     return {
-      categoryId: id,
+      categoryId,
       label: meta.label,
-      current: totalAmount(currentExpenses.filter((expense) => expense.categoryId === id)),
-      previous: totalAmount(previousExpenses.filter((expense) => expense.categoryId === id)),
+      current: totalAmount(
+        currentExpenses.filter((expense) => expense.categoryId === categoryId),
+      ),
+      previous: totalAmount(
+        previousExpenses.filter((expense) => expense.categoryId === categoryId),
+      ),
     };
   });
 }
@@ -629,7 +698,7 @@ function ExpenseStatisticsPage() {
                 ? `${visibleDate.getMonth() + 1}월 ${visibleDate.getDate()}일 총 지출`
                 : `${visibleDate.getMonth() + 1}월 총 지출`}
             </span>
-            <h2 id="expense-total-title">{formatWon(total)}</h2>
+            <ExpenseTotalAmount value={formatWon(total)} />
             <p className={`expense-statistics-summary__comparison is-${comparison.tone}`}>
               {comparison.tone === 'up' ? (
                 <ArrowUp size={15} />

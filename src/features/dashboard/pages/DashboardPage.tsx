@@ -11,6 +11,7 @@ import {
   Coins,
   CreditCard,
   Gauge,
+  Gamepad2,
   Landmark,
   Lightbulb,
   LoaderCircle,
@@ -43,13 +44,18 @@ const NEWS_PREVIEW_SIZE = 20;
 
 const categoryMeta: Record<
   number,
-  { label: string; icon: LucideIcon; tone: 'food' | 'cafe' | 'transport' | 'shopping' | 'etc' }
+  {
+    label: string;
+    icon: LucideIcon;
+    tone: 'food' | 'cafe' | 'transport' | 'shopping' | 'leisure' | 'etc';
+  }
 > = {
   1: { label: '식비', icon: Utensils, tone: 'food' },
   2: { label: '카페', icon: Coffee, tone: 'cafe' },
   3: { label: '교통', icon: Bus, tone: 'transport' },
   4: { label: '쇼핑', icon: ShoppingBag, tone: 'shopping' },
   5: { label: '기타', icon: CreditCard, tone: 'etc' },
+  6: { label: '여가', icon: Gamepad2, tone: 'leisure' },
 };
 
 const newsIcons: Record<string, LucideIcon> = {

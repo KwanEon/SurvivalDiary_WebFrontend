@@ -7,6 +7,8 @@
   --expense-transport-soft: rgb(63 169 216 / 12%);
   --expense-shopping: #ffc145;
   --expense-shopping-soft: rgb(255 193 69 / 12%);
+  --expense-leisure: #8367e8;
+  --expense-leisure-soft: rgb(131 103 232 / 12%);
   --expense-etc: #9ea3a8;
   --expense-etc-soft: rgb(158 163 168 / 12%);
 }
@@ -22,7 +24,7 @@
   border-radius: var(--radius-md);
   color: var(--color-ink-600);
   background: var(--color-surface);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 750;
 }
 
@@ -75,7 +77,7 @@
 .expense-entry-day__heading p {
   margin-top: 0.2rem;
   color: var(--color-ink-500);
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
 }
 
 .expense-entry-calendar {
@@ -152,7 +154,7 @@
   margin-top: var(--space-4);
   padding-bottom: var(--space-2);
   color: var(--color-ink-500);
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
   font-weight: 750;
   text-align: center;
 }
@@ -173,7 +175,7 @@
   border-radius: var(--radius-pill);
   color: var(--color-ink-800);
   background: transparent;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 650;
   cursor: pointer;
   transition:
@@ -219,7 +221,7 @@
 .expense-entry-day__heading > strong {
   flex: 0 0 auto;
   color: var(--color-primary-800);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
 }
 
 .expense-entry-day__state {
@@ -229,7 +231,7 @@
   justify-content: center;
   gap: var(--space-2);
   color: var(--color-ink-500);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 650;
   flex-direction: column;
   text-align: center;
@@ -245,7 +247,7 @@
   border-radius: var(--radius-md);
   color: var(--color-ink-800);
   background: var(--color-surface);
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
   font-weight: 750;
   cursor: pointer;
 }
@@ -295,6 +297,11 @@
   background: var(--expense-shopping-soft);
 }
 
+.expense-entry-day__icon.is-leisure {
+  color: var(--expense-leisure);
+  background: var(--expense-leisure-soft);
+}
+
 .expense-entry-day__icon.is-etc {
   color: var(--expense-etc);
   background: var(--expense-etc-soft);
@@ -314,18 +321,18 @@
 
 .expense-entry-day__item > div strong {
   color: var(--color-ink-800);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
 }
 
 .expense-entry-day__item > div small {
   margin-top: 0.2rem;
   color: var(--color-ink-500);
-  font-size: 0.625rem;
+  font-size: 0.75rem;
 }
 
 .expense-entry-day__item > b {
   color: var(--color-ink-800);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   white-space: nowrap;
 }
 
@@ -355,7 +362,7 @@
 .expense-entry__form-header p {
   margin-top: 0.2rem;
   color: var(--color-ink-500);
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
 }
 
 .expense-entry__form-icon {
@@ -376,7 +383,7 @@
   margin-top: var(--space-4);
   padding: 0.75rem 0.9rem;
   border-radius: var(--radius-md);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 
@@ -402,7 +409,7 @@
 .expense-entry__group legend,
 .expense-entry__field > span:first-child {
   color: var(--color-ink-800);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 800;
 }
 
@@ -410,12 +417,12 @@
   display: block;
   margin-top: 0.15rem;
   color: var(--color-ink-400);
-  font-size: 0.625rem;
+  font-size: 0.75rem;
 }
 
 .expense-entry__categories {
   display: grid;
-  grid-template-columns: repeat(5, minmax(4.5rem, 1fr));
+  grid-template-columns: repeat(6, minmax(4rem, 1fr));
   gap: var(--space-3);
   margin-top: var(--space-3);
 }
@@ -453,7 +460,7 @@
 }
 
 .expense-entry__category strong {
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
 }
 
 .expense-entry__category--food > span {
@@ -474,6 +481,11 @@
 .expense-entry__category--shopping > span {
   color: var(--expense-shopping);
   background: var(--expense-shopping-soft);
+}
+
+.expense-entry__category--leisure > span {
+  color: var(--expense-leisure);
+  background: var(--expense-leisure-soft);
 }
 
 .expense-entry__category--etc > span {
@@ -503,7 +515,7 @@
 
 .expense-entry__field > span:first-child small {
   color: var(--color-ink-400);
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   font-weight: 500;
 }
 
@@ -515,7 +527,7 @@
   border-radius: var(--radius-md);
   color: var(--color-ink-800);
   background: var(--color-surface);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   transition:
     border-color var(--transition-fast),
     box-shadow var(--transition-fast);
@@ -578,7 +590,7 @@
 }
 
 .expense-entry__amount > small {
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
 }
 
 .expense-entry__input-with-icon input {
@@ -597,7 +609,7 @@
 .expense-entry__field-error {
   margin: 0.4rem 0 0;
   color: var(--color-danger) !important;
-  font-size: 0.625rem !important;
+  font-size: 0.75rem !important;
   font-style: normal;
   font-weight: 650 !important;
 }
@@ -612,7 +624,7 @@
 .expense-entry__memo-meta > small:last-child {
   margin-top: 0.35rem;
   color: var(--color-ink-400);
-  font-size: 0.5625rem;
+  font-size: 0.75rem;
 }
 
 .expense-entry__submit {
@@ -657,7 +669,7 @@
 
 .expense-entry-preview__heading small {
   color: var(--color-primary-700);
-  font-size: 0.5625rem;
+  font-size: 0.6875rem;
   font-weight: 850;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -683,7 +695,7 @@
   gap: var(--space-3);
   padding: 0.55rem 0.75rem;
   border-bottom: 1px solid var(--color-line);
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
 }
 
 .expense-entry-preview dl > div:last-child {

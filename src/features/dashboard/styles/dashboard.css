@@ -315,6 +315,12 @@
   background: var(--color-danger-soft);
 }
 
+.dashboard-summary-tile__icon--leisure,
+.dashboard-category-icon--leisure {
+  color: #8367e8;
+  background: rgb(131 103 232 / 12%);
+}
+
 .dashboard-summary-tile__icon--etc,
 .dashboard-category-icon--etc,
 .dashboard-summary-tile__icon--muted {
