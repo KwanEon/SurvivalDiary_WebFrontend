@@ -54,6 +54,9 @@ const DirectionsBusIcon = createMaterialCategoryIcon(
 const ShoppingBagIcon = createMaterialCategoryIcon(
   'M18 6h-2c0-2.21-1.79-4-4-4S8 3.79 8 6H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-8 4c0 .55-.45 1-1 1s-1-.45-1-1V8h2v2zm2-6c1.1 0 2 .9 2 2h-4c0-1.1.9-2 2-2zm4 6c0 .55-.45 1-1 1s-1-.45-1-1V8h2v2z',
 );
+const SportsEsportsIcon = createMaterialCategoryIcon(
+  'M21.58 16.09l-1.09-7.66A4 4 0 0 0 16.53 5H7.47a4 4 0 0 0-3.96 3.43l-1.09 7.66A3.49 3.49 0 0 0 5.88 20c1.05 0 2.05-.48 2.71-1.29L10.12 17h3.76l1.53 1.71A3.49 3.49 0 0 0 18.12 20a3.49 3.49 0 0 0 3.46-3.91zM11 11H9v2H7v-2H5V9h2V7h2v2h2v2zm4-1c-.83 0-1.5-.67-1.5-1.5S14.17 7 15 7s1.5.67 1.5 1.5S15.83 10 15 10zm2 3c-.83 0-1.5-.67-1.5-1.5S16.17 10 17 10s1.5.67 1.5 1.5S17.83 13 17 13z',
+);
 const MoreHorizIcon = createMaterialCategoryIcon(
   'M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z',
 );
@@ -62,12 +65,13 @@ const categories: Array<{
   id: number;
   label: string;
   icon: CategoryIconComponent;
-  tone: 'food' | 'cafe' | 'transport' | 'shopping' | 'etc';
+  tone: 'food' | 'cafe' | 'transport' | 'shopping' | 'leisure' | 'etc';
 }> = [
   { id: 1, label: '식비', icon: RestaurantIcon, tone: 'food' },
   { id: 2, label: '카페', icon: LocalCafeIcon, tone: 'cafe' },
   { id: 3, label: '교통', icon: DirectionsBusIcon, tone: 'transport' },
   { id: 4, label: '쇼핑', icon: ShoppingBagIcon, tone: 'shopping' },
+  { id: 6, label: '여가', icon: SportsEsportsIcon, tone: 'leisure' },
   { id: 5, label: '기타', icon: MoreHorizIcon, tone: 'etc' },
 ];
 
@@ -283,7 +287,7 @@ export default function ExpenseEntryPage() {
               <div className="expense-entry-day__list">
                 {selectedDateExpenses.map((expense) => {
                   const category =
-                    categories.find((item) => item.id === expense.categoryId) ?? categories[4];
+                    categories.find((item) => item.id === expense.categoryId) ?? categories[5];
                   const Icon = category.icon;
 
                   return (
