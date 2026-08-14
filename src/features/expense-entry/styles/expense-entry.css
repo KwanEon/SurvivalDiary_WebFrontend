@@ -576,7 +576,11 @@
 .expense-entry__amount input {
   padding-right: 2.4rem;
   font-weight: 800;
-  text-align: right;
+  text-align: left;
+}
+
+.expense-entry__amount input::placeholder {
+  font-weight: 400;
 }
 
 .expense-entry__amount > small,
