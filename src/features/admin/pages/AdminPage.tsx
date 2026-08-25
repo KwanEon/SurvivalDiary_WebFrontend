@@ -1,7 +1,15 @@
 import { BarChart3, FileText, MapPinned, MessageCircleMore, Search, ShieldCheck, UsersRound, WalletCards } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { answerAdminPost, deleteAdminPost, getAdminPosts, getAdminUserExpenses, getAdminUsers, type AdminExpense, type AdminUser } from '../api';
-import type { CommunityPost } from '../../community/types';
+import {
+  answerAdminPost,
+  deleteAdminPost,
+  getAdminPosts,
+  getAdminUserExpenses,
+  getAdminUsers,
+  type AdminExpense,
+  type AdminUser,
+  type CommunityPost,
+} from '../api';
 import '../styles/admin.css';
 
 type AdminTab = 'overview' | 'users' | 'community' | 'policies' | 'map';

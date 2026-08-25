@@ -1,5 +1,7 @@
-import { apiRequest } from '../auth';
-import type { CommunityPost, PageResponse } from '../community/types';
+import { apiRequest, loginWithEmail, logoutSession } from './request';
+import type { AdminSessionUser, CommunityPost, PageResponse } from './types';
+
+export type { CommunityPost } from './types';
 
 export interface AdminUser {
   userId: number;
@@ -18,6 +20,25 @@ export interface AdminExpense {
   amount: number;
   spentAt: string;
   memo: string | null;
+}
+
+export function getAdminSessionUser() {
+  return apiRequest<AdminSessionUser>('/users/me');
+}
+
+export async function loginAdmin(email: string, password: string) {
+  await loginWithEmail(email, password);
+
+  try {
+    const user = await getAdminSessionUser();
+    if (user.role !== 'ADMIN') {
+      throw new Error('관리자 계정만 로그인할 수 있어요.');
+    }
+    return user;
+  } catch (error) {
+    await logoutSession();
+    throw error;
+  }
 }
 
 export function getAdminUsers(query = '', page = 0, size = 20) {
