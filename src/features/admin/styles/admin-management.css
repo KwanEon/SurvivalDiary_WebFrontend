@@ -1,0 +1,353 @@
+.admin-workspace__header > div > p {
+  margin-top: var(--space-1);
+  color: var(--color-ink-500);
+  font-size: 0.75rem;
+}
+
+.admin-user-layout,
+.admin-community-layout {
+  display: grid;
+  grid-template-columns: minmax(19rem, 0.75fr) minmax(24rem, 1.25fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.admin-community-layout {
+  grid-template-columns: minmax(16rem, 0.65fr) minmax(25rem, 1.35fr);
+}
+
+.admin-user-detail {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.admin-post-list {
+  max-height: 46rem;
+  overflow-y: auto;
+}
+
+.admin-post {
+  display: block;
+  width: 100%;
+  padding: var(--space-4);
+  border: 1px solid var(--color-line);
+  cursor: pointer;
+  background: var(--color-surface);
+  text-align: left;
+}
+
+.admin-post.is-selected {
+  border-color: var(--color-primary-600);
+  background: var(--color-primary-50);
+}
+
+.admin-post h3 {
+  margin-top: var(--space-1);
+  font-size: 0.95rem;
+}
+
+.admin-post small {
+  display: block;
+  margin-top: var(--space-2);
+  color: var(--color-ink-400);
+  font-size: 0.65rem;
+}
+
+.admin-edit-form {
+  padding: var(--space-5);
+}
+
+.admin-detail-heading,
+.admin-detail-heading > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.admin-detail-heading > div {
+  justify-content: flex-start;
+}
+
+.admin-detail-heading h3 {
+  font-size: 1rem;
+}
+
+.admin-detail-heading > span {
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-pill);
+  color: var(--color-primary-800);
+  background: var(--color-primary-100);
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.admin-readonly-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+}
+
+.admin-readonly-grid span,
+.admin-readonly-grid strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.admin-readonly-grid span {
+  margin-bottom: 0.2rem;
+  color: var(--color-ink-400);
+  font-size: 0.65rem;
+}
+
+.admin-readonly-grid strong {
+  color: var(--color-ink-700);
+  font-size: 0.75rem;
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.admin-form-grid label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--color-ink-600);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.admin-form-grid__wide {
+  grid-column: 1 / -1;
+}
+
+.admin-form-grid input,
+.admin-form-grid select,
+.admin-form-grid textarea {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  color: var(--color-ink-800);
+  background: var(--color-surface);
+  font: inherit;
+  font-weight: 500;
+  outline: none;
+}
+
+.admin-form-grid input:focus,
+.admin-form-grid select:focus,
+.admin-form-grid textarea:focus {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+.admin-form-grid textarea {
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.admin-interest-field {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.admin-interest-field legend,
+.admin-editor-label {
+  margin-bottom: 0.45rem;
+  color: var(--color-ink-600);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.admin-interest-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.admin-interest-tabs button {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  color: var(--color-ink-600);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.admin-interest-tabs button.is-selected {
+  border-color: var(--color-primary-700);
+  color: white;
+  background: var(--color-primary-700);
+}
+
+.admin-editor-field {
+  display: grid;
+}
+
+.admin-editor-toolbar {
+  display: flex;
+  gap: 0.2rem;
+  padding: 0.35rem;
+  border: 1px solid var(--color-line);
+  border-bottom: 0;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--color-surface-soft);
+}
+
+.admin-editor-toolbar button {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-ink-600);
+  background: transparent;
+  cursor: pointer;
+}
+
+.admin-editor-toolbar button:hover {
+  color: var(--color-primary-800);
+  background: var(--color-primary-100);
+}
+
+.admin-rich-editor {
+  min-height: 16rem;
+  padding: 0.85rem;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--color-line);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  outline: 0;
+  color: var(--color-ink-800);
+  background: var(--color-surface);
+  font-size: 0.75rem;
+  line-height: 1.7;
+}
+
+.admin-rich-editor:focus {
+  border-color: var(--color-primary-500);
+  outline: 2px solid var(--color-primary-100);
+}
+
+.admin-rich-editor:empty::before {
+  color: var(--color-ink-400);
+  content: attr(data-placeholder);
+  pointer-events: none;
+}
+
+.admin-rich-editor img {
+  display: block;
+  max-width: 100%;
+  max-height: 24rem;
+  margin: 0.75rem 0;
+  border-radius: var(--radius-md);
+  object-fit: contain;
+}
+
+.admin-save-button,
+.admin-form-actions .button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.admin-save-button {
+  margin-top: var(--space-4);
+}
+
+.admin-selection-placeholder {
+  display: grid;
+  min-height: 13rem;
+  place-items: center;
+  align-content: center;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  color: var(--color-ink-400);
+  text-align: center;
+}
+
+.admin-feedback {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.admin-feedback--error {
+  color: #a62929;
+  background: var(--color-danger-soft);
+}
+
+.admin-feedback--success {
+  color: var(--color-primary-800);
+  background: var(--color-primary-100);
+}
+
+.admin-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.admin-checkboxes label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-ink-600);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.admin-form-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.button--danger {
+  color: white;
+  background: var(--color-danger);
+}
+
+@media (max-width: 1000px) {
+  .admin-user-layout,
+  .admin-community-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-post-list {
+    max-height: 24rem;
+  }
+}
+
+@media (max-width: 800px) {
+  .admin-form-grid,
+  .admin-readonly-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-form-grid__wide {
+    grid-column: auto;
+  }
+
+  .admin-form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .admin-form-actions .button {
+    justify-content: center;
+  }
+}
