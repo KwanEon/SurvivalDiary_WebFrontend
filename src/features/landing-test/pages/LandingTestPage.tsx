@@ -11,11 +11,13 @@ import {
   Home,
   Landmark,
   MapPin,
+  Menu,
   Newspaper,
   ReceiptText,
   ShieldCheck,
   Sparkles,
   Utensils,
+  X,
 } from 'lucide-react';
 import '../styles/landing-test.css';
 
@@ -128,6 +130,11 @@ const faqs = [
 ];
 
 function LandingTestPage() {
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const closeMenu = () => setMenuOpen(false);
+
   return (
     <div className="landing-test">
       <header className="landing-test__header">
@@ -135,16 +142,43 @@ function LandingTestPage() {
           <img src="/brand/app-icon.png" alt="" />
           <strong>생존일기</strong>
         </a>
-        <nav className="landing-test__nav" aria-label="소개 페이지 메뉴">
-          <a href="#features">주요 기능</a>
-          <a href="#map">절약 지도</a>
-          <a href="#community">커뮤니티</a>
-          <a href="#guide">이용 방법</a>
-          <a href="#faq">FAQ</a>
+        <nav
+          className={`landing-test__nav ${menuOpen ? 'is-open' : ''}`}
+          id="landing-navigation"
+          aria-label="소개 페이지 메뉴"
+        >
+          <a href="#features" onClick={closeMenu}>
+            주요 기능
+          </a>
+          <a href="#map" onClick={closeMenu}>
+            절약 지도
+          </a>
+          <a href="#community" onClick={closeMenu}>
+            커뮤니티
+          </a>
+          <a href="#guide" onClick={closeMenu}>
+            이용 방법
+          </a>
+          <a href="#faq" onClick={closeMenu}>
+            FAQ
+          </a>
+          <a className="landing-test__nav-download" href="#download" onClick={closeMenu}>
+            다운로드
+          </a>
         </nav>
         <a className="landing-test__download landing-test__download--small" href="#download">
           <Download size={16} /> 앱 다운로드
         </a>
+        <button
+          className="landing-test__menu-button"
+          type="button"
+          aria-label={menuOpen ? '메뉴 닫기' : '메뉴 열기'}
+          aria-expanded={menuOpen}
+          aria-controls="landing-navigation"
+          onClick={() => setMenuOpen((current) => !current)}
+        >
+          {menuOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
       </header>
 
       <main>
@@ -414,9 +448,14 @@ function LandingTestPage() {
               <p>생존일기를 시작하기 전에 궁금한 내용을 확인해 보세요.</p>
             </Reveal>
             <Reveal direction="right" delay={100} className="landing-faq__items">
-              {faqs.map(([question, answer]) => (
-                <details key={question}>
-                  <summary>
+              {faqs.map(([question, answer], index) => (
+                <details key={question} open={openFaqIndex === index}>
+                  <summary
+                    onClick={(event) => {
+                      event.preventDefault();
+                      setOpenFaqIndex((current) => (current === index ? null : index));
+                    }}
+                  >
                     {question}
                     <ChevronDown size={18} />
                   </summary>

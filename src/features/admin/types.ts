@@ -21,6 +21,34 @@ export interface AdminSessionUser {
   role: 'USER' | 'ADMIN';
 }
 
+export interface AdminUserDetail {
+  userId: number;
+  email: string;
+  name: string;
+  nickname: string | null;
+  profileImageUrl: string | null;
+  phone: string | null;
+  birthDate: string | null;
+  birthYear: number | null;
+  gender: 'MALE' | 'FEMALE' | null;
+  region: string | null;
+  signupInterest: string | null;
+  bio: string | null;
+  role: 'USER' | 'ADMIN';
+  createdAt: string;
+}
+
+export interface AdminUserUpdateRequest {
+  name: string;
+  nickname: string | null;
+  phone: string | null;
+  birthDate: string | null;
+  gender: 'MALE' | 'FEMALE' | null;
+  region: string | null;
+  signupInterest: string | null;
+  bio: string | null;
+}
+
 export interface CommunityPost {
   postId: number;
   category: string;
@@ -39,6 +67,17 @@ export interface CommunityPost {
   bookmarked: boolean;
   owner: boolean;
   authorRole: 'USER' | 'ADMIN';
+  commentsDisabled: boolean;
+  commentsHidden: boolean;
+}
+
+export interface CommunityPostUpdateRequest {
+  category: string;
+  title: string;
+  content: string;
+  hashtags: string[];
+  imageUrls: string[];
+  imageAlignment: string | null;
   commentsDisabled: boolean;
   commentsHidden: boolean;
 }

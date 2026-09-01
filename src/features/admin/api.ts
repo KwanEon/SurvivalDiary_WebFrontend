@@ -1,5 +1,12 @@
 import { apiRequest, loginWithEmail, logoutSession } from './request';
-import type { AdminSessionUser, CommunityPost, PageResponse } from './types';
+import type {
+  AdminSessionUser,
+  AdminUserDetail,
+  AdminUserUpdateRequest,
+  CommunityPost,
+  CommunityPostUpdateRequest,
+  PageResponse,
+} from './types';
 
 export type { CommunityPost } from './types';
 
@@ -42,19 +49,48 @@ export async function loginAdmin(email: string, password: string) {
 }
 
 export function getAdminUsers(query = '', page = 0, size = 20) {
-  return apiRequest<PageResponse<AdminUser>>(`/admin/users?query=${encodeURIComponent(query)}&page=${page}&size=${size}`);
+  return apiRequest<PageResponse<AdminUser>>(
+    `/admin/users?query=${encodeURIComponent(query)}&page=${page}&size=${size}`,
+  );
 }
 
 export function getAdminUserExpenses(userId: number) {
   return apiRequest<AdminExpense[]>(`/admin/users/${userId}/expenses`);
 }
 
+export function getAdminUser(userId: number) {
+  return apiRequest<AdminUserDetail>(`/admin/users/${userId}`);
+}
+
+export function updateAdminUser(userId: number, request: AdminUserUpdateRequest) {
+  return apiRequest<AdminUserDetail>(`/admin/users/${userId}`, {
+    method: 'PUT',
+    body: JSON.stringify(request),
+  });
+}
+
 export function getAdminPosts(page = 0, size = 20) {
-  return apiRequest<PageResponse<CommunityPost>>(`/admin/community/posts?page=${page}&size=${size}`);
+  return apiRequest<PageResponse<CommunityPost>>(
+    `/admin/community/posts?page=${page}&size=${size}`,
+  );
+}
+
+export function getAdminPost(postId: number) {
+  return apiRequest<CommunityPost>(`/admin/community/posts/${postId}`);
+}
+
+export function updateAdminPost(postId: number, request: CommunityPostUpdateRequest) {
+  return apiRequest<CommunityPost>(`/admin/community/posts/${postId}`, {
+    method: 'PUT',
+    body: JSON.stringify(request),
+  });
 }
 
 export function answerAdminPost(postId: number, content: string) {
-  return apiRequest(`/admin/community/posts/${postId}/answer`, { method: 'POST', body: JSON.stringify({ content }) });
+  return apiRequest(`/admin/community/posts/${postId}/answer`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  });
 }
 
 export function deleteAdminPost(postId: number) {
