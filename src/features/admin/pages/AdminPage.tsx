@@ -3,27 +3,44 @@ import {
   FileText,
   MapPinned,
   MessageCircleMore,
+  CircleHelp,
   ShieldCheck,
   UsersRound,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { getAdminInquirySummary } from '../api';
 import AdminCommunityManagement from '../components/AdminCommunityManagement';
 import AdminUserManagement from '../components/AdminUserManagement';
 import '../styles/admin.css';
 import '../styles/admin-management.css';
 
-type AdminTab = 'overview' | 'users' | 'community' | 'policies' | 'map';
+type AdminTab = 'overview' | 'users' | 'community' | 'inquiries' | 'policies' | 'map';
 
 const tabs: Array<{ id: AdminTab; label: string; icon: typeof UsersRound }> = [
   { id: 'overview', label: '운영 현황', icon: BarChart3 },
   { id: 'users', label: '회원·지출', icon: UsersRound },
-  { id: 'community', label: '커뮤니티·문의', icon: MessageCircleMore },
+  { id: 'community', label: '커뮤니티 관리', icon: MessageCircleMore },
+  { id: 'inquiries', label: '관리자 문의', icon: CircleHelp },
   { id: 'policies', label: '정책 관리', icon: FileText },
   { id: 'map', label: '지도 관리', icon: MapPinned },
 ];
 
 function AdminPage() {
   const [tab, setTab] = useState<AdminTab>('overview');
+  const [unansweredInquiryCount, setUnansweredInquiryCount] = useState(0);
+
+  const refreshInquiryCount = useCallback(async () => {
+    try {
+      const summary = await getAdminInquirySummary();
+      setUnansweredInquiryCount(summary.unansweredCount);
+    } catch {
+      setUnansweredInquiryCount(0);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshInquiryCount();
+  }, [refreshInquiryCount]);
 
   return (
     <div className="page admin-page">
@@ -50,6 +67,9 @@ function AdminPage() {
               >
                 <Icon size={16} />
                 {label}
+                {id === 'inquiries' && unansweredInquiryCount > 0 && (
+                  <span className="admin-count-badge">{unansweredInquiryCount}</span>
+                )}
               </button>
             ))}
           </nav>
@@ -68,21 +88,34 @@ function AdminPage() {
                     <Icon size={22} />
                   </span>
                   <h2>{label}</h2>
+                  {id === 'inquiries' && unansweredInquiryCount > 0 && (
+                    <span className="admin-count-badge admin-count-badge--card">
+                      {unansweredInquiryCount}
+                    </span>
+                  )}
                   <p>
                     {id === 'users'
                       ? '회원 상세 정보와 회원별 지출 내역을 확인하고 수정합니다.'
                       : id === 'community'
-                        ? '전체 게시글을 상세 조회하고 수정·삭제하거나 질문에 답변합니다.'
-                        : id === 'policies'
-                          ? '정책 외부 데이터의 노출 운영 기능을 준비합니다.'
-                          : '공공 지도 데이터와 직접 등록 장소를 관리합니다.'}
+                        ? '일반 커뮤니티 게시글을 상세 조회하고 수정하거나 삭제합니다.'
+                        : id === 'inquiries'
+                          ? '회원 문의를 확인하고 관리자 답변을 등록합니다.'
+                          : id === 'policies'
+                            ? '정책 외부 데이터의 노출 운영 기능을 준비합니다.'
+                            : '공공 지도 데이터와 직접 등록 장소를 관리합니다.'}
                   </p>
                 </button>
               ))}
             </section>
           )}
           {tab === 'users' && <AdminUserManagement />}
-          {tab === 'community' && <AdminCommunityManagement />}
+          {tab === 'community' && <AdminCommunityManagement mode="community" />}
+          {tab === 'inquiries' && (
+            <AdminCommunityManagement
+              mode="inquiry"
+              onInquiryChanged={() => void refreshInquiryCount()}
+            />
+          )}
           {(tab === 'policies' || tab === 'map') && (
             <section className="ui-card admin-notice">
               <h2>{tab === 'policies' ? '정책 관리 준비' : '지도 관리 준비'}</h2>

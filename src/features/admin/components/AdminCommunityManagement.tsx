@@ -14,13 +14,21 @@ import {
   answerAdminPost,
   deleteAdminPost,
   getAdminPost,
+  getAdminInquiries,
   getAdminPosts,
   updateAdminPost,
   type CommunityPost,
 } from '../api';
 import type { CommunityPostUpdateRequest } from '../types';
+import AdminToast from './AdminToast';
 
-const categories = ['자유게시판', '정보 공유', '절약 인증', '질문'];
+const communityCategories = ['자유게시판', '정보 공유', '절약 인증', '질문'];
+const communityCategoryTabs = ['전체', ...communityCategories];
+
+interface AdminCommunityManagementProps {
+  mode: 'community' | 'inquiry';
+  onInquiryChanged?: () => void;
+}
 
 function toUpdateRequest(post: CommunityPost): CommunityPostUpdateRequest {
   return {
@@ -32,10 +40,16 @@ function toUpdateRequest(post: CommunityPost): CommunityPostUpdateRequest {
     imageAlignment: post.imageAlignment,
     commentsDisabled: post.commentsDisabled,
     commentsHidden: post.commentsHidden,
+    adminInquiry: post.adminInquiry,
+    secret: post.secret,
   };
 }
 
-export default function AdminCommunityManagement() {
+export default function AdminCommunityManagement({
+  mode,
+  onInquiryChanged,
+}: AdminCommunityManagementProps) {
+  const isInquiry = mode === 'inquiry';
   const editorRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
@@ -47,10 +61,11 @@ export default function AdminCommunityManagement() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState('전체');
 
   useEffect(() => {
     void loadPosts();
-  }, []);
+  }, [mode, selectedCategory]);
 
   useEffect(() => {
     if (editorRef.current && draft) editorRef.current.innerHTML = draft.content;
@@ -60,7 +75,15 @@ export default function AdminCommunityManagement() {
     setLoading(true);
     setError(null);
     try {
-      setPosts((await getAdminPosts()).content);
+      setSelectedPost(null);
+      setDraft(null);
+      setPosts(
+        (
+          await (isInquiry
+            ? getAdminInquiries()
+            : getAdminPosts(selectedCategory === '전체' ? '' : selectedCategory))
+        ).content,
+      );
     } catch (requestError) {
       setError(
         requestError instanceof Error ? requestError.message : '게시글 목록을 불러오지 못했습니다.',
@@ -159,6 +182,7 @@ export default function AdminCommunityManagement() {
       setSelectedPost(null);
       setDraft(null);
       setMessage('게시글을 삭제했습니다.');
+      if (isInquiry) onInquiryChanged?.();
     } catch (requestError) {
       setError(
         requestError instanceof Error ? requestError.message : '게시글을 삭제하지 못했습니다.',
@@ -171,8 +195,18 @@ export default function AdminCommunityManagement() {
     setError(null);
     try {
       await answerAdminPost(selectedPost.postId, answer.trim());
+      const answeredPost = {
+        ...selectedPost,
+        answered: true,
+        commentCount: selectedPost.commentCount + 1,
+      };
+      setSelectedPost(answeredPost);
+      setPosts((current) =>
+        current.map((post) => (post.postId === answeredPost.postId ? answeredPost : post)),
+      );
       setAnswer('');
       setMessage('관리자 답변을 등록했습니다.');
+      onInquiryChanged?.();
     } catch (requestError) {
       setError(
         requestError instanceof Error ? requestError.message : '답변을 등록하지 못했습니다.',
@@ -184,8 +218,12 @@ export default function AdminCommunityManagement() {
     <section className="admin-workspace">
       <div className="admin-workspace__header">
         <div>
-          <h2>커뮤니티 관리</h2>
-          <p>게시글 상세 내용을 확인하고 수정하거나 삭제합니다.</p>
+          <h2>{isInquiry ? '관리자 문의 관리' : '커뮤니티 관리'}</h2>
+          <p>
+            {isInquiry
+              ? '회원 문의를 확인하고 관리자 답변을 등록합니다.'
+              : '일반 게시글의 상세 내용을 확인하고 수정하거나 삭제합니다.'}
+          </p>
         </div>
         <button type="button" onClick={() => void loadPosts()}>
           새로고침
@@ -196,10 +234,22 @@ export default function AdminCommunityManagement() {
           {error}
         </p>
       )}
-      {message && (
-        <p className="admin-feedback admin-feedback--success" role="status">
-          {message}
-        </p>
+      <AdminToast message={message} onClose={() => setMessage(null)} />
+      {!isInquiry && (
+        <div className="admin-category-tabs" role="tablist" aria-label="커뮤니티 카테고리">
+          {communityCategoryTabs.map((category) => (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={selectedCategory === category}
+              className={selectedCategory === category ? 'is-active' : ''}
+              onClick={() => setSelectedCategory(category)}
+              key={category}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
       )}
       <div className="admin-community-layout">
         <div className="admin-post-list">
@@ -210,7 +260,16 @@ export default function AdminCommunityManagement() {
               key={post.postId}
               onClick={() => void openPost(post.postId)}
             >
-              <span>{post.category}</span>
+              <span>{isInquiry ? '관리자 문의' : post.category}</span>
+              {isInquiry && (
+                <span
+                  className={
+                    post.answered ? 'admin-answer-state is-answered' : 'admin-answer-state'
+                  }
+                >
+                  {post.answered ? '답변 완료' : '답변 대기'}
+                </span>
+              )}
               <h3>{post.title}</h3>
               <p>
                 {post.nickname ?? post.author} · {new Date(post.createdAt).toLocaleString()}
@@ -221,7 +280,9 @@ export default function AdminCommunityManagement() {
             </button>
           ))}
           {!loading && posts.length === 0 && (
-            <p className="admin-empty">관리할 게시글이 없습니다.</p>
+            <p className="admin-empty">
+              {isInquiry ? '접수된 문의가 없습니다.' : '관리할 게시글이 없습니다.'}
+            </p>
           )}
         </div>
         {selectedPost && draft ? (
@@ -242,6 +303,16 @@ export default function AdminCommunityManagement() {
                 <span>작성일</span>
                 <strong>{new Date(selectedPost.createdAt).toLocaleString()}</strong>
               </p>
+              {(selectedPost.adminInquiry || selectedPost.secret) && (
+                <p>
+                  <span>공개 설정</span>
+                  <strong>
+                    {selectedPost.adminInquiry ? '관리자 문의' : ''}
+                    {selectedPost.adminInquiry && selectedPost.secret ? ' · ' : ''}
+                    {selectedPost.secret ? '비밀글' : ''}
+                  </strong>
+                </p>
+              )}
             </div>
             <div className="admin-form-grid">
               <label>
@@ -250,7 +321,7 @@ export default function AdminCommunityManagement() {
                   value={draft.category}
                   onChange={(event) => setDraft({ ...draft, category: event.target.value })}
                 >
-                  {categories.map((category) => (
+                  {(isInquiry ? ['질문'] : communityCategories).map((category) => (
                     <option value={category} key={category}>
                       {category}
                     </option>
@@ -365,7 +436,7 @@ export default function AdminCommunityManagement() {
                 댓글 숨김
               </label>
             </div>
-            {selectedPost.category === '질문' && (
+            {isInquiry && selectedPost.category === '질문' && (
               <div className="admin-answer">
                 <input
                   value={answer}
