@@ -69,10 +69,19 @@ export function updateAdminUser(userId: number, request: AdminUserUpdateRequest)
   });
 }
 
-export function getAdminPosts(page = 0, size = 20) {
+export function getAdminPosts(category = '', page = 0, size = 20) {
+  const categoryQuery = category ? `&category=${encodeURIComponent(category)}` : '';
   return apiRequest<PageResponse<CommunityPost>>(
-    `/admin/community/posts?page=${page}&size=${size}`,
+    `/admin/community/posts?page=${page}&size=${size}${categoryQuery}`,
   );
+}
+
+export function getAdminInquiries(page = 0, size = 20) {
+  return apiRequest<PageResponse<CommunityPost>>(`/admin/inquiries?page=${page}&size=${size}`);
+}
+
+export function getAdminInquirySummary() {
+  return apiRequest<{ unansweredCount: number }>('/admin/inquiries/summary');
 }
 
 export function getAdminPost(postId: number) {

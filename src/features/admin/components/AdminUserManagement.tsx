@@ -9,6 +9,7 @@ import {
   type AdminUser,
 } from '../api';
 import type { AdminUserDetail, AdminUserUpdateRequest } from '../types';
+import AdminToast from './AdminToast';
 
 const money = new Intl.NumberFormat('ko-KR', {
   style: 'currency',
@@ -171,11 +172,7 @@ export default function AdminUserManagement() {
           {error}
         </p>
       )}
-      {message && (
-        <p className="admin-feedback admin-feedback--success" role="status">
-          {message}
-        </p>
-      )}
+      <AdminToast message={message} onClose={() => setMessage(null)} />
       <div className="admin-user-layout">
         <article className="ui-card admin-table-card">
           <table>

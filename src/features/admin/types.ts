@@ -69,6 +69,10 @@ export interface CommunityPost {
   authorRole: 'USER' | 'ADMIN';
   commentsDisabled: boolean;
   commentsHidden: boolean;
+  adminInquiry: boolean;
+  secret: boolean;
+  accessible: boolean;
+  answered: boolean;
 }
 
 export interface CommunityPostUpdateRequest {
@@ -80,4 +84,6 @@ export interface CommunityPostUpdateRequest {
   imageAlignment: string | null;
   commentsDisabled: boolean;
   commentsHidden: boolean;
+  adminInquiry: boolean;
+  secret: boolean;
 }

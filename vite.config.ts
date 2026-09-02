@@ -23,6 +23,10 @@ export default defineConfig(({ command, mode }) => {
           target: 'http://localhost:8080',
           changeOrigin: true,
         },
+        '/community-images': {
+          target: 'http://localhost:8080',
+          changeOrigin: true,
+        },
       },
     },
   };
